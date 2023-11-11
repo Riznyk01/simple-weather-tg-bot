@@ -23,8 +23,8 @@ type RespMessage struct {
 	Text   string `json:"text"`
 }
 
-type LatLon struct {
-	//Name       string `json:"name"`
+type Geocoding struct {
+	//Name string `json:"name"`
 	//LocalNames struct {
 	//	Iu          string `json:"iu,omitempty"`
 	//} `json:"local_names,omitempty"`
