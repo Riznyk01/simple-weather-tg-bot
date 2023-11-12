@@ -1,7 +1,9 @@
 package main
 
 import (
+	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/utils"
+	"SimpleWeatherTgBot/weather"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -44,7 +46,7 @@ func main() {
 	}
 }
 
-func getUpdates(fullUrl string, offset int) ([]Update, error) {
+func getUpdates(fullUrl string, offset int) ([]types.Update, error) {
 	resp, err := http.Get(fullUrl + "/getUpdates?offset=" + strconv.Itoa(offset))
 	if err != nil {
 		return nil, err
@@ -54,7 +56,7 @@ func getUpdates(fullUrl string, offset int) ([]Update, error) {
 	if err != nil {
 		return nil, err
 	}
-	var restResponse RestResponse
+	var restResponse types.RestResponse
 	err = json.Unmarshal(body, &restResponse)
 	if err != nil {
 		return nil, err
@@ -62,14 +64,14 @@ func getUpdates(fullUrl string, offset int) ([]Update, error) {
 	return restResponse.Result, nil
 }
 
-func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather string, update Update) error {
-	var respMessage RespMessage
+func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather string, update types.Update) error {
+	var respMessage types.RespMessage
 	respMessage.ChatId = update.Message.Chat.ChatId
 
 	if update.Message.Text == "/start" {
 		respMessage.Text = "Hello, this bot will send you weather from openweathermap.org in response to your message with the name of the city in any language."
 	} else {
-		geo, err := coordinatesByLocationName(directGeoUrl, endOfDirectGeoUrl, update)
+		geo, err := weather.CoordinatesByLocationName(directGeoUrl, endOfDirectGeoUrl, update)
 		if err != nil {
 			return err
 		}
@@ -77,28 +79,33 @@ func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather str
 			latStr := strconv.FormatFloat(geo[0].Lat, 'f', -1, 64)
 			lonStr := strconv.FormatFloat(geo[0].Lon, 'f', -1, 64)
 
-			weather, err := getWeather(weatherUrl, latStr, lonStr, tWeather)
+			weatherData, err := getWeather(weatherUrl, latStr, lonStr, tWeather)
 			if err != nil {
 				return err
 			}
-			fmt.Println(weather)
-			respMessage.Text = fmt.Sprintf("%s in %s %s \n\n🌡Now %.2f°C     FeelsLike %.2f°C\n       Max %.2f°C     ️Min %.2f°C 💧 %d%%\n\n🌬 %d hPa / %.2f mmHg\n💨%.2f m/s / %s \n\n🌅  %s\n🌉  %s",
-				weather.Weather[0].Main,
-				weather.Sys.Country,
-				weather.Name,
-				weather.Main.Temp,
-				weather.Main.FeelsLike,
-				weather.Main.TempMax,
-				weather.Main.TempMin,
-				weather.Main.Humidity,
-				weather.Main.Pressure,
-				utils.HPaToMmHg(float64(weather.Main.Pressure)),
-				weather.Wind.Speed,
-				utils.DegreesToDirection(weather.Wind.Deg),
-				utils.TimeStampToHuman(weather.Sys.Sunrise, weather.Timezone).Format("2006-01-02 15:04:05 -0700"),
-				utils.TimeStampToHuman(weather.Sys.Sunset, weather.Timezone).Format("2006-01-02 15:04:05 -0700"))
-		}
+			fmt.Println(weatherData)
+			if weatherData.Weather[0].Main == "Rain" {
+				weatherData.Weather[0].Main = " 🌧"
+			} else if weatherData.Weather[0].Main == "Clouds" {
+				weatherData.Weather[0].Main += " ☁️"
+			}
 
+			respMessage.Text = fmt.Sprintf("%s %s - %s \n\n🌡Now %.2f°C     FeelsLike %.2f°C\n       Max %.2f°C     ️Min %.2f°C 💧 %d%%\n\n 💨%d hPa / %.2f mmHg\n        %.2f m/s / %s \n\n🌅  %s\n🌉  %s",
+				weatherData.Sys.Country,
+				weatherData.Name,
+				weatherData.Weather[0].Main,
+				weatherData.Main.Temp,
+				weatherData.Main.FeelsLike,
+				weatherData.Main.TempMax,
+				weatherData.Main.TempMin,
+				weatherData.Main.Humidity,
+				weatherData.Main.Pressure,
+				utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
+				weatherData.Wind.Speed,
+				utils.DegreesToDirection(weatherData.Wind.Deg),
+				utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone),
+				utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone))
+		}
 	}
 	buf, err := json.Marshal(respMessage)
 	if err != nil {
@@ -113,45 +120,22 @@ func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather str
 	return nil
 }
 
-func getWeather(weatherUrl, latStr, lonStr, tWeather string) (WeatherResponse, error) {
+func getWeather(weatherUrl, latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
 	resp, err := http.Get(weatherUrl + "lat=" + latStr + "&lon=" + lonStr + "&appid=" + tWeather + "&units=metric")
 	if err != nil {
-		return WeatherResponse{}, err
+		return types.WeatherResponse{}, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("resp error:", err)
-		return WeatherResponse{}, err
+		return types.WeatherResponse{}, err
 	}
-	var weatherResponse WeatherResponse
+	var weatherResponse types.WeatherResponse
 	err = json.Unmarshal(body, &weatherResponse)
 	if err != nil {
 		fmt.Println("getWeather func err:", err)
-		return WeatherResponse{}, err
+		return types.WeatherResponse{}, err
 	}
 	return weatherResponse, nil
-}
-
-func coordinatesByLocationName(directGeoUrl, endOfDirectGeoUrl string, update Update) ([]Geocoding, error) {
-	city := update.Message.Text
-	resp, err := http.Get(directGeoUrl + city + endOfDirectGeoUrl)
-	if err != nil {
-		fmt.Println(err)
-		return []Geocoding{}, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return []Geocoding{}, err
-	}
-	var geocoding []Geocoding
-
-	err = json.Unmarshal(body, &geocoding)
-	if err != nil {
-		fmt.Println("CoordinatesByLocationName func err:", err)
-		return []Geocoding{}, err
-	}
-	return geocoding, nil
 }

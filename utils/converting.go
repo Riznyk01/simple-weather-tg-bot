@@ -6,10 +6,10 @@ func HPaToMmHg(hPa float64) float64 {
 	return hPa * 0.750061561303
 }
 
-func TimeStampToHuman(timeStamp, timezone int) time.Time {
+func TimeStampToHuman(timeStamp, timezone int) string {
 	location := time.FixedZone("Custom Timezone", timezone)
 	timeValue := time.Unix(int64(timeStamp), 0).In(location)
-	return timeValue
+	return timeValue.Format("2006-01-02 15:04:05 -0700")
 }
 
 func DegreesToDirection(degrees float64) string {
