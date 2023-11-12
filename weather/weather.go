@@ -35,7 +35,6 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 		return types.WeatherResponse{}, err
 	}
 	var weatherResponse types.WeatherResponse
-	fmt.Println(string(body))
 	err = json.Unmarshal(body, &weatherResponse)
 	if err != nil {
 		fmt.Println("getWeather func err:", err)
