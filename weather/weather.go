@@ -9,7 +9,7 @@ import (
 	"net/url"
 )
 
-func GetWeather(latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
+func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
 
 	u, err := url.Parse(weatherUrl)
@@ -18,14 +18,12 @@ func GetWeather(latStr, lonStr, tWeather string) (types.WeatherResponse, error) 
 		return types.WeatherResponse{}, err
 	}
 	q := url.Values{}
-	q.Add("lat", latStr)
-	q.Add("lon", lonStr)
+	q.Add("q", city)
 	q.Add("appid", tWeather)
 	q.Add("units", "metric")
 
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return types.WeatherResponse{}, err
@@ -37,6 +35,7 @@ func GetWeather(latStr, lonStr, tWeather string) (types.WeatherResponse, error) 
 		return types.WeatherResponse{}, err
 	}
 	var weatherResponse types.WeatherResponse
+	fmt.Println(string(body))
 	err = json.Unmarshal(body, &weatherResponse)
 	if err != nil {
 		fmt.Println("getWeather func err:", err)
