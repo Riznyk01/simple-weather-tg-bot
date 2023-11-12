@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 )
@@ -21,11 +22,10 @@ func main() {
 		return
 	}
 	t := os.Getenv("BOT_TOKEN")
+	tWeather := os.Getenv("WEATHER_KEY")
 
 	botApi := "https://api.telegram.org/bot"
-	fullUrl := botApi + t
-
-	tWeather := os.Getenv("WEATHER_KEY")
+	baseUrl := botApi + t
 
 	directGeoUrl := "http://api.openweathermap.org/geo/1.0/direct?q="
 	limit := "1"
@@ -35,19 +35,30 @@ func main() {
 
 	offset := 0
 	for {
-		updates, err := getUpdates(fullUrl, offset)
+		updates, err := getUpdates(baseUrl, offset)
 		if err != nil {
 			log.Println("Smth went wrong: ", err.Error())
 		}
 		for _, update := range updates {
-			err = response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather, update)
+			err = response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, baseUrl, tWeather, update)
 			offset = update.UpdateId + 1
 		}
 	}
 }
 
-func getUpdates(fullUrl string, offset int) ([]types.Update, error) {
-	resp, err := http.Get(fullUrl + "/getUpdates?offset=" + strconv.Itoa(offset))
+func getUpdates(baseUrlGet string, offset int) ([]types.Update, error) {
+
+	u, err := url.Parse(baseUrlGet + "/getUpdates")
+	if err != nil {
+		fmt.Println("Error parsing URL (getUpdates):", err)
+		return nil, err
+	}
+	q := url.Values{}
+	q.Add("offset", strconv.Itoa(offset))
+	u.RawQuery = q.Encode()
+	fullUrlGet := u.String()
+
+	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +132,24 @@ func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather str
 }
 
 func getWeather(weatherUrl, latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
-	resp, err := http.Get(weatherUrl + "lat=" + latStr + "&lon=" + lonStr + "&appid=" + tWeather + "&units=metric")
+
+	u, err := url.Parse(weatherUrl)
+	if err != nil {
+		fmt.Println("Error parsing URL (getWeather):", err)
+		return types.WeatherResponse{}, err
+	}
+	q := url.Values{}
+	q.Add("lat", latStr)
+	q.Add("lon", lonStr)
+	q.Add("appid", tWeather)
+	q.Add("units", "metric")
+
+	u.RawQuery = q.Encode()
+	fullUrlGet := u.String()
+
+	fmt.Println(fullUrlGet)
+
+	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return types.WeatherResponse{}, err
 	}
