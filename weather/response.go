@@ -10,14 +10,14 @@ import (
 	"strconv"
 )
 
-func Response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather string, update types.Update) error {
+func Response(fullUrl, tWeather string, update types.Update) error {
 	var respMessage types.RespMessage
 	respMessage.ChatId = update.Message.Chat.ChatId
 
 	if update.Message.Text == "/start" {
 		respMessage.Text = "Hello, this bot will send you weather from openweathermap.org in response to your message with the name of the city in any language."
 	} else {
-		geo, err := CoordinatesByLocationName(directGeoUrl, endOfDirectGeoUrl, update)
+		geo, err := CoordinatesByLocationName(tWeather, update)
 		if err != nil {
 			return err
 		}
@@ -25,7 +25,7 @@ func Response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather str
 			latStr := strconv.FormatFloat(geo[0].Lat, 'f', -1, 64)
 			lonStr := strconv.FormatFloat(geo[0].Lon, 'f', -1, 64)
 
-			weatherData, err := GetWeather(weatherUrl, latStr, lonStr, tWeather)
+			weatherData, err := GetWeather(latStr, lonStr, tWeather)
 			if err != nil {
 				return err
 			}
@@ -34,8 +34,9 @@ func Response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather str
 				weatherData.Weather[0].Main = " 🌧"
 			} else if weatherData.Weather[0].Main == "Clouds" {
 				weatherData.Weather[0].Main += " ☁️"
+			} else if weatherData.Weather[0].Main == "Clear" {
+				weatherData.Weather[0].Main += " ✨"
 			}
-
 			respMessage.Text = fmt.Sprintf("%s %s - %s \n\n🌡Now %.2f°C     FeelsLike %.2f°C\n       Max %.2f°C     ️Min %.2f°C 💧 %d%%\n\n 💨%d hPa / %.2f mmHg\n        %.2f m/s / %s \n\n🌅  %s\n🌉  %s",
 				weatherData.Sys.Country,
 				weatherData.Name,

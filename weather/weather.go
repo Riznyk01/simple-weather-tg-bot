@@ -9,7 +9,8 @@ import (
 	"net/url"
 )
 
-func GetWeather(weatherUrl, latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
+func GetWeather(latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
+	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
@@ -24,8 +25,6 @@ func GetWeather(weatherUrl, latStr, lonStr, tWeather string) (types.WeatherRespo
 
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-
-	fmt.Println(fullUrlGet)
 
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {

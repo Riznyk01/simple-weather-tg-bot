@@ -23,22 +23,16 @@ func main() {
 	tWeather := os.Getenv("WEATHER_KEY")
 
 	botApi := "https://api.telegram.org/bot"
-	baseUrl := botApi + t
-
-	directGeoUrl := "http://api.openweathermap.org/geo/1.0/direct?q="
-	limit := "1"
-	endOfDirectGeoUrl := "&limit=" + limit + "&appid=" + tWeather
-
-	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
+	baseTgUrl := botApi + t
 
 	offset := 0
 	for {
-		updates, err := getUpdates(baseUrl, offset)
+		updates, err := getUpdates(baseTgUrl, offset)
 		if err != nil {
 			log.Println("Smth went wrong: ", err.Error())
 		}
 		for _, update := range updates {
-			err = weather.Response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, baseUrl, tWeather, update)
+			err = weather.Response(baseTgUrl, tWeather, update)
 			offset = update.UpdateId + 1
 		}
 	}
