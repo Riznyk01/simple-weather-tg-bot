@@ -2,9 +2,7 @@ package main
 
 import (
 	"SimpleWeatherTgBot/types"
-	"SimpleWeatherTgBot/utils"
 	"SimpleWeatherTgBot/weather"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -40,7 +38,7 @@ func main() {
 			log.Println("Smth went wrong: ", err.Error())
 		}
 		for _, update := range updates {
-			err = response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, baseUrl, tWeather, update)
+			err = weather.Response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, baseUrl, tWeather, update)
 			offset = update.UpdateId + 1
 		}
 	}
@@ -73,97 +71,4 @@ func getUpdates(baseUrlGet string, offset int) ([]types.Update, error) {
 		return nil, err
 	}
 	return restResponse.Result, nil
-}
-
-func response(weatherUrl, directGeoUrl, endOfDirectGeoUrl, fullUrl, tWeather string, update types.Update) error {
-	var respMessage types.RespMessage
-	respMessage.ChatId = update.Message.Chat.ChatId
-
-	if update.Message.Text == "/start" {
-		respMessage.Text = "Hello, this bot will send you weather from openweathermap.org in response to your message with the name of the city in any language."
-	} else {
-		geo, err := weather.CoordinatesByLocationName(directGeoUrl, endOfDirectGeoUrl, update)
-		if err != nil {
-			return err
-		}
-		if len(geo) != 0 {
-			latStr := strconv.FormatFloat(geo[0].Lat, 'f', -1, 64)
-			lonStr := strconv.FormatFloat(geo[0].Lon, 'f', -1, 64)
-
-			weatherData, err := getWeather(weatherUrl, latStr, lonStr, tWeather)
-			if err != nil {
-				return err
-			}
-			fmt.Println(weatherData)
-			if weatherData.Weather[0].Main == "Rain" {
-				weatherData.Weather[0].Main = " 🌧"
-			} else if weatherData.Weather[0].Main == "Clouds" {
-				weatherData.Weather[0].Main += " ☁️"
-			}
-
-			respMessage.Text = fmt.Sprintf("%s %s - %s \n\n🌡Now %.2f°C     FeelsLike %.2f°C\n       Max %.2f°C     ️Min %.2f°C 💧 %d%%\n\n 💨%d hPa / %.2f mmHg\n        %.2f m/s / %s \n\n🌅  %s\n🌉  %s",
-				weatherData.Sys.Country,
-				weatherData.Name,
-				weatherData.Weather[0].Main,
-				weatherData.Main.Temp,
-				weatherData.Main.FeelsLike,
-				weatherData.Main.TempMax,
-				weatherData.Main.TempMin,
-				weatherData.Main.Humidity,
-				weatherData.Main.Pressure,
-				utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
-				weatherData.Wind.Speed,
-				utils.DegreesToDirection(weatherData.Wind.Deg),
-				utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone),
-				utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone))
-		}
-	}
-	buf, err := json.Marshal(respMessage)
-	if err != nil {
-		return err
-		//log.Println("Smth went wrong: ", err.Error())
-	}
-	_, err = http.Post(fullUrl+"/sendMessage", "application/json", bytes.NewBuffer(buf))
-	if err != nil {
-		return err
-		//log.Println("Smth went wrong: ", err.Error())
-	}
-	return nil
-}
-
-func getWeather(weatherUrl, latStr, lonStr, tWeather string) (types.WeatherResponse, error) {
-
-	u, err := url.Parse(weatherUrl)
-	if err != nil {
-		fmt.Println("Error parsing URL (getWeather):", err)
-		return types.WeatherResponse{}, err
-	}
-	q := url.Values{}
-	q.Add("lat", latStr)
-	q.Add("lon", lonStr)
-	q.Add("appid", tWeather)
-	q.Add("units", "metric")
-
-	u.RawQuery = q.Encode()
-	fullUrlGet := u.String()
-
-	fmt.Println(fullUrlGet)
-
-	resp, err := http.Get(fullUrlGet)
-	if err != nil {
-		return types.WeatherResponse{}, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("resp error:", err)
-		return types.WeatherResponse{}, err
-	}
-	var weatherResponse types.WeatherResponse
-	err = json.Unmarshal(body, &weatherResponse)
-	if err != nil {
-		fmt.Println("getWeather func err:", err)
-		return types.WeatherResponse{}, err
-	}
-	return weatherResponse, nil
 }
