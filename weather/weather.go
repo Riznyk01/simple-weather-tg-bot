@@ -24,7 +24,7 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	q.Add("units", "metric")
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-	fmt.Println(fullUrlGet)
+	//fmt.Println(fullUrlGet)
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return types.WeatherResponse{}, err
@@ -35,11 +35,27 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 		fmt.Println("resp error:", err)
 		return types.WeatherResponse{}, err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			var errorResponse struct {
+				Cod     string `json:"cod"`
+				Message string `json:"message"`
+			}
+			err = json.Unmarshal(body, &errorResponse)
+			if err == nil {
+				return types.WeatherResponse{}, fmt.Errorf("%s"+". Try another city name.", errorResponse.Message)
+			}
+		}
+		return types.WeatherResponse{}, fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
+	}
+
 	var weatherResponse types.WeatherResponse
 	err = json.Unmarshal(body, &weatherResponse)
 	if err != nil {
 		fmt.Println("getWeather func err:", err)
 		return types.WeatherResponse{}, err
 	}
+
 	return weatherResponse, nil
 }
