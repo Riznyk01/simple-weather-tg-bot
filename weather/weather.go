@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -15,8 +16,9 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		fmt.Println("Error parsing URL (getWeather):", err)
-		return types.WeatherResponse{}, err
+		errorMessage := err.Error()
+		log.Println("Error: ", errorMessage)
+		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
 	}
 	q := url.Values{}
 	q.Add("q", city)
@@ -32,8 +34,9 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("resp error:", err)
-		return types.WeatherResponse{}, err
+		errorMessage := err.Error()
+		log.Println("Error: ", errorMessage)
+		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -53,9 +56,9 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	var weatherResponse types.WeatherResponse
 	err = json.Unmarshal(body, &weatherResponse)
 	if err != nil {
-		fmt.Println("getWeather func err:", err)
-		return types.WeatherResponse{}, err
+		errorMessage := err.Error()
+		log.Println("Error: ", errorMessage)
+		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
 	}
-
 	return weatherResponse, nil
 }

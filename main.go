@@ -43,7 +43,7 @@ func main() {
 				weatherData, err := weather.GetWeather(update.Message.Text, tWeather)
 				if err != nil {
 					errorMessage := err.Error()
-					fmt.Println("Error getting weather data: ", errorMessage)
+					log.Println("Error getting weather data: ", errorMessage)
 					userMessage = "Error getting weather data: " + errorMessage
 				} else {
 					if weatherData.Weather[0].Main == "Rain" {
@@ -52,6 +52,8 @@ func main() {
 						weatherData.Weather[0].Main = "☁️ Clouds"
 					} else if weatherData.Weather[0].Main == "Clear" {
 						weatherData.Weather[0].Main = "✨ Clear"
+					} else if weatherData.Weather[0].Main == "Snow" {
+						weatherData.Weather[0].Main = "❄️ Snow"
 					}
 					userMessage = fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeelsLike %.1f°C  🔺 %.1f°C ️ 🔻 %.1f°C \n %.2f mmHg %.2f m/s (%s) \n\n🌅  %s 🌉  %s",
 						weatherData.Sys.Country,
@@ -73,7 +75,8 @@ func main() {
 			msg.ReplyToMessageID = update.Message.MessageID
 			_, err := bot.Send(msg)
 			if err != nil {
-				return
+				errorMessage := err.Error()
+				log.Println("Error: ", errorMessage)
 			}
 		}
 	}
