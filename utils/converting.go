@@ -13,6 +13,13 @@ func TimeStampToHuman(timeStamp, timezone int) string {
 	return timeValue.Format("15:04 -0700")
 }
 
+func TimeStampToHuman5d(timeStamp, timezone int) string {
+	location := time.FixedZone("Custom Timezone", timezone)
+	timeValue := time.Unix(int64(timeStamp), 0).In(location)
+	//return timeValue.Format("2006-01-02 15:04:05 -0700")
+	return timeValue.Format("01-02 15")
+}
+
 func DegreesToDirection(degrees float64) string {
 	if degrees < 22.5 {
 		return "North ⬆️"

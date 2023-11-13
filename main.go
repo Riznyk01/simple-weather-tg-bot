@@ -2,10 +2,12 @@ package main
 
 import (
 	"SimpleWeatherTgBot/weather"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -41,16 +43,18 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 		var err error
 
 		if update.Message.Text == "/start" {
-			userMessage = "Hello! This bot will send you weather information from openweathermap.org in response to your message with the name of the city in any language. \nSimply enter the city name and send it to the bot."
+			userMessage = "Hello! This bot will send you weather information from openweathermap.org. " +
+				"Type the name of the city in any language. Use /weather for current weather and /forecast for a 5-day forecast."
+		} else if strings.HasPrefix(update.Message.Text, "/weather") {
+			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/weather"))
+			userMessage, err = weather.GetWeather(city, tWeather)
+		} else if strings.HasPrefix(update.Message.Text, "/forecast") {
+			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/forecast"))
+			userMessage, err = weather.Get5DayForecast(city, tWeather)
 		} else {
-			userMessage, err = weather.GetWeather(update.Message.Text, tWeather)
-			if err != nil {
-				errorMessage := err.Error()
-				log.Println("Error getting weather data: ", errorMessage)
-				userMessage = "Error getting weather data: " + errorMessage
-			}
+			userMessage = "Invalid command. Use /weather [city] for current weather or /forecast [city] for a 5-day forecast."
 		}
-
+		fmt.Println(userMessage)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
 		msg.ReplyToMessageID = update.Message.MessageID
 

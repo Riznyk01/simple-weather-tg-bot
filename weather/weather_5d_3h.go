@@ -11,9 +11,9 @@ import (
 	"net/url"
 )
 
-func GetWeather(city, tWeather string) (string, error) {
+func Get5DayForecast(city, tWeather string) (string, error) {
 
-	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
+	weatherUrl := "https://api.openweathermap.org/data/2.5/forecast?"
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
@@ -54,28 +54,21 @@ func GetWeather(city, tWeather string) (string, error) {
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
 	}
 
-	var weatherData types.WeatherResponse
-	err = json.Unmarshal(body, &weatherData)
+	var forecastData types.WeatherResponse5d3h
+	err = json.Unmarshal(body, &forecastData)
 	if err != nil {
 		errorMessage := err.Error()
 		log.Println("Error: ", errorMessage)
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
+	var forecast string
 
-	userMessage := fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.1f°C  📉 %.1f°C ️ 📈 %.1f°C \n %.2f mmHg %.2f m/s (%s) \n\n🌅  %s 🌉  %s",
-		weatherData.Sys.Country,
-		weatherData.Name,
-		utils.AddWeatherIcons(weatherData.Weather[0].Main),
-		weatherData.Main.Temp,
-		weatherData.Main.Humidity,
-		weatherData.Main.FeelsLike,
-		weatherData.Main.TempMin,
-		weatherData.Main.TempMax,
-		utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
-		weatherData.Wind.Speed,
-		utils.DegreesToDirection(weatherData.Wind.Deg),
-		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone),
-		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone))
+	for _, entry := range forecastData.List {
 
-	return userMessage, nil
+		forecast += fmt.Sprintf("%-10s 🌡 %.1f°C 💧%d%%\n",
+			utils.TimeStampToHuman5d(entry.Dt, forecastData.City.Timezone)+"h",
+			entry.Main.Temp,
+			entry.Main.Humidity)
+	}
+	return forecast, nil
 }
