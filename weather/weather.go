@@ -10,6 +10,7 @@ import (
 )
 
 func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
+
 	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
 
 	u, err := url.Parse(weatherUrl)
@@ -21,9 +22,9 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	q.Add("q", city)
 	q.Add("appid", tWeather)
 	q.Add("units", "metric")
-
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
+	fmt.Println(fullUrlGet)
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return types.WeatherResponse{}, err
