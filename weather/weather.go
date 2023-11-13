@@ -2,6 +2,7 @@ package weather
 
 import (
 	"SimpleWeatherTgBot/types"
+	"SimpleWeatherTgBot/utils"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +11,7 @@ import (
 	"net/url"
 )
 
-func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
+func GetWeather(city, tWeather string) (string, error) {
 
 	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
 
@@ -18,7 +19,7 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	if err != nil {
 		errorMessage := err.Error()
 		log.Println("Error: ", errorMessage)
-		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
+		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 	q := url.Values{}
 	q.Add("q", city)
@@ -29,14 +30,14 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 	//fmt.Println(fullUrlGet)
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
-		return types.WeatherResponse{}, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errorMessage := err.Error()
 		log.Println("Error: ", errorMessage)
-		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
+		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -47,18 +48,34 @@ func GetWeather(city, tWeather string) (types.WeatherResponse, error) {
 			}
 			err = json.Unmarshal(body, &errorResponse)
 			if err == nil {
-				return types.WeatherResponse{}, fmt.Errorf("%s"+". Try another city name.", errorResponse.Message)
+				return "", fmt.Errorf("%s"+". Try another city name.", errorResponse.Message)
 			}
 		}
-		return types.WeatherResponse{}, fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
 	}
 
-	var weatherResponse types.WeatherResponse
-	err = json.Unmarshal(body, &weatherResponse)
+	var weatherData types.WeatherResponse
+	err = json.Unmarshal(body, &weatherData)
 	if err != nil {
 		errorMessage := err.Error()
 		log.Println("Error: ", errorMessage)
-		return types.WeatherResponse{}, fmt.Errorf("error: %s", errorMessage)
+		return "", fmt.Errorf("error: %s", errorMessage)
 	}
-	return weatherResponse, nil
+
+	userMessage := fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeelsLike %.1f°C  🔺 %.1f°C ️ 🔻 %.1f°C \n %.2f mmHg %.2f m/s (%s) \n\n🌅  %s 🌉  %s",
+		weatherData.Sys.Country,
+		weatherData.Name,
+		utils.AddWeatherIcons(weatherData.Weather[0].Main),
+		weatherData.Main.Temp,
+		weatherData.Main.Humidity,
+		weatherData.Main.FeelsLike,
+		weatherData.Main.TempMax,
+		weatherData.Main.TempMin,
+		utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
+		weatherData.Wind.Speed,
+		utils.DegreesToDirection(weatherData.Wind.Deg),
+		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone),
+		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone))
+
+	return userMessage, nil
 }
