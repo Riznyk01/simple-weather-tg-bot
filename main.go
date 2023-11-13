@@ -9,8 +9,6 @@ import (
 )
 
 func main() {
-	var userMessage string
-
 	err := godotenv.Load(".env.dev")
 	if err != nil {
 		return
@@ -34,24 +32,32 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message != nil {
-			if update.Message.Text == "/start" {
-				userMessage = "Hello! This bot will send you weather information from openweathermap.org in response to your message with the name of the city in any language. \nSimply enter the city name and send it to the bot."
-			} else {
-				userMessage, err = weather.GetWeather(update.Message.Text, tWeather)
-				if err != nil {
-					errorMessage := err.Error()
-					log.Println("Error getting weather data: ", errorMessage)
-					userMessage = "Error getting weather data: " + errorMessage
-				}
-			}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
-			msg.ReplyToMessageID = update.Message.MessageID
-			_, err := bot.Send(msg)
+		go handleUpdate(bot, update, tWeather)
+	}
+}
+func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string) {
+	if update.Message != nil {
+		var userMessage string
+		var err error
+
+		if update.Message.Text == "/start" {
+			userMessage = "Hello! This bot will send you weather information from openweathermap.org in response to your message with the name of the city in any language. \nSimply enter the city name and send it to the bot."
+		} else {
+			userMessage, err = weather.GetWeather(update.Message.Text, tWeather)
 			if err != nil {
 				errorMessage := err.Error()
-				log.Println("Error: ", errorMessage)
+				log.Println("Error getting weather data: ", errorMessage)
+				userMessage = "Error getting weather data: " + errorMessage
 			}
+		}
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
+		msg.ReplyToMessageID = update.Message.MessageID
+
+		_, err = bot.Send(msg)
+		if err != nil {
+			errorMessage := err.Error()
+			log.Println("Error: ", errorMessage)
 		}
 	}
 }
