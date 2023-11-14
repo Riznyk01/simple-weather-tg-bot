@@ -70,7 +70,7 @@ type WeatherResponse5d3h struct {
 		} `json:"clouds"`
 		Wind struct {
 			Speed float64 `json:"speed"`
-			Deg   int     `json:"deg"`
+			Deg   float64 `json:"deg"`
 			Gust  float64 `json:"gust"`
 		} `json:"wind"`
 		Visibility int     `json:"visibility"`

@@ -14,3 +14,24 @@ func AddWeatherIcons(weather string) string {
 		return weather
 	}
 }
+
+func ReplaceWeatherToIcons(weather string) string {
+	switch weather {
+	case "scattered clouds":
+		return "☁️"
+	case "light rain":
+		return "🌧️"
+	case "moderate rain":
+		return "🌧️"
+	case "overcast clouds":
+		return "🌥️"
+	case "few clouds":
+		return "☁️"
+	case "broken clouds":
+		return "🌦️"
+	case "light snow":
+		return "🌨️"
+	default:
+		return weather
+	}
+}

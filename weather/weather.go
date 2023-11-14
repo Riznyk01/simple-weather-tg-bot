@@ -74,8 +74,8 @@ func GetWeather(city, tWeather string) (string, error) {
 		utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
 		weatherData.Wind.Speed,
 		utils.DegreesToDirection(weatherData.Wind.Deg),
-		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone),
-		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone))
+		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
+		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
 	return userMessage, nil
 }

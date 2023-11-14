@@ -64,11 +64,27 @@ func Get5DayForecast(city, tWeather string) (string, error) {
 	var forecast string
 
 	for _, entry := range forecastData.List {
+		hours := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
+		monthDay := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "01-02")
 
-		forecast += fmt.Sprintf("%-10s 🌡 %.1f°C 💧%d%%\n",
-			utils.TimeStampToHuman5d(entry.Dt, forecastData.City.Timezone)+"h",
-			entry.Main.Temp,
-			entry.Main.Humidity)
+		if hours == "01" || hours == "02" {
+			forecast += monthDay + "\n"
+		}
+
+		forecast += fmt.Sprintf("%s %v %v°C %d%% %.1f mmHg %.1f m/s %s\n",
+			hours+"h",
+			utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
+			int(entry.Main.Temp),
+			entry.Main.Humidity,
+			utils.HPaToMmHg(float64(entry.Main.Pressure)),
+			entry.Wind.Speed,
+			utils.DegreesToDirectionIcon(entry.Wind.Deg),
+		)
+
+		if hours == "21" || hours == "22" || hours == "23" {
+			forecast += "\n"
+		}
+
 	}
 	return forecast, nil
 }
