@@ -8,26 +8,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
+	"strconv"
 )
 
-func GetWeather(city, tWeather string) (string, error) {
+func GetWeather(fullUrlGet string) (string, error) {
 
-	weatherUrl := "https://api.openweathermap.org/data/2.5/weather?"
-
-	u, err := url.Parse(weatherUrl)
-	if err != nil {
-		errorMessage := err.Error()
-		log.Println("Error: ", errorMessage)
-		return "", fmt.Errorf("error: %s", errorMessage)
-	}
-	q := url.Values{}
-	q.Add("q", city)
-	q.Add("appid", tWeather)
-	q.Add("units", "metric")
-	u.RawQuery = q.Encode()
-	fullUrlGet := u.String()
-	//fmt.Println(fullUrlGet)
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return "", err
@@ -76,6 +61,9 @@ func GetWeather(city, tWeather string) (string, error) {
 		weatherData.Wind.Speed,
 		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
 		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
+
+	cityId := strconv.Itoa(weatherData.ID)
+	userMessage += "\n\n" + "https://openweathermap.org/city/" + cityId
 
 	return userMessage, nil
 }

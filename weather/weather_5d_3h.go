@@ -8,26 +8,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
+	"strconv"
 )
 
-func Get5DayForecast(city, tWeather string) (string, error) {
-
-	weatherUrl := "https://api.openweathermap.org/data/2.5/forecast?"
-
-	u, err := url.Parse(weatherUrl)
-	if err != nil {
-		errorMessage := err.Error()
-		log.Println("Error: ", errorMessage)
-		return "", fmt.Errorf("error: %s", errorMessage)
-	}
-	q := url.Values{}
-	q.Add("q", city)
-	q.Add("appid", tWeather)
-	q.Add("units", "metric")
-	u.RawQuery = q.Encode()
-	fullUrlGet := u.String()
-	//fmt.Println(fullUrlGet)
+func Get5DayForecast(fullUrlGet string) (string, error) {
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return "", err
@@ -88,5 +72,7 @@ func Get5DayForecast(city, tWeather string) (string, error) {
 		}
 
 	}
+	cityId := strconv.Itoa(forecastData.City.ID)
+	forecast += "\n" + "https://openweathermap.org/city/" + cityId
 	return forecast, nil
 }
