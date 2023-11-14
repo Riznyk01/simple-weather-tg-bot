@@ -1,6 +1,8 @@
 package utils
 
-import "time"
+import (
+	"time"
+)
 
 func HPaToMmHg(hPa float64) float64 {
 	return hPa * 0.750061561303
@@ -13,25 +15,18 @@ func TimeStampToHuman(timeStamp, timezone int, format string) string {
 	return timeValue.Format(format)
 }
 
-func DegreesToDirection(degrees float64) string {
-	if degrees >= 337.5 || degrees < 22.5 {
-		return "North ⬆️"
-	} else if degrees >= 22.5 && degrees < 67.5 {
-		return "Northeast ↗️"
-	} else if degrees >= 67.5 && degrees < 112.5 {
-		return "East ➡️"
-	} else if degrees >= 112.5 && degrees < 157.5 {
-		return "Southeast ↘️"
-	} else if degrees >= 157.5 && degrees < 202.5 {
-		return "South ⬇️"
-	} else if degrees >= 202.5 && degrees < 247.5 {
-		return "Southwest ↙️"
-	} else if degrees >= 247.5 && degrees < 292.5 {
-		return "West ⬅️"
-	} else if degrees >= 292.5 && degrees < 337.5 {
-		return "Northwest ↖️"
+func TimeStampToInfo(timeStamp, timezone int, infoType string) string {
+	location := time.FixedZone("Custom Timezone", timezone)
+	timeValue := time.Unix(int64(timeStamp), 0).In(location)
+
+	switch infoType {
+	case "d":
+		return timeValue.Weekday().String()
+	case "m":
+		return timeValue.Month().String()
+	default:
+		return "Invalid info type"
 	}
-	return "Cannot determine"
 }
 
 func DegreesToDirectionIcon(degrees float64) string {

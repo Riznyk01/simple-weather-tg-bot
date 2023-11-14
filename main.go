@@ -44,15 +44,15 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 
 		if update.Message.Text == "/start" {
 			userMessage = "Hello! This bot will send you weather information from openweathermap.org. " +
-				"Type the name of the city in any language. Use /weather for current weather and /forecast for a 5-day forecast."
-		} else if strings.HasPrefix(update.Message.Text, "/weather") {
-			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/weather"))
+				"Type the name of the city in any language. Use /w for current weather and /f for a 5-day forecast."
+		} else if strings.HasPrefix(update.Message.Text, "/w") {
+			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/w"))
 			userMessage, err = weather.GetWeather(city, tWeather)
-		} else if strings.HasPrefix(update.Message.Text, "/forecast") {
-			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/forecast"))
+		} else if strings.HasPrefix(update.Message.Text, "/f") {
+			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/f"))
 			userMessage, err = weather.Get5DayForecast(city, tWeather)
 		} else {
-			userMessage = "Invalid command. Use /weather [city] for current weather or /forecast [city] for a 5-day forecast."
+			userMessage = "Invalid command. Use /w [city] for current weather or /f [city] for a 5-day forecast."
 		}
 		fmt.Println(userMessage)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)

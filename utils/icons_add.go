@@ -1,20 +1,5 @@
 package utils
 
-func AddWeatherIcons(weather string) string {
-	switch weather {
-	case "Rain":
-		return "🌧 Rain"
-	case "Clouds":
-		return "☁️ Clouds"
-	case "Clear":
-		return "✨ Clear"
-	case "Snow":
-		return "❄️ Snow"
-	default:
-		return weather
-	}
-}
-
 func ReplaceWeatherToIcons(weather string) string {
 	switch weather {
 	case "scattered clouds":
@@ -23,6 +8,10 @@ func ReplaceWeatherToIcons(weather string) string {
 		return "🌧️"
 	case "moderate rain":
 		return "🌧️"
+	case "heavy intensity rain":
+		return "🌧️🌧️"
+	case "very heavy rain":
+		return "🌧️🌧️🌧️"
 	case "overcast clouds":
 		return "🌥️"
 	case "few clouds":
@@ -31,6 +20,10 @@ func ReplaceWeatherToIcons(weather string) string {
 		return "🌦️"
 	case "light snow":
 		return "🌨️"
+	case "clear sky":
+		return "☀️"
+	case "snow":
+		return "❄️"
 	default:
 		return weather
 	}

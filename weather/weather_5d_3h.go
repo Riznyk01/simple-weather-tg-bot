@@ -63,12 +63,14 @@ func Get5DayForecast(city, tWeather string) (string, error) {
 	}
 	var forecast string
 
+	forecast += forecastData.City.Country + " " + forecastData.City.Name + "\n\n" + utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02") + " " + utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m") + " (" + utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d") + ")\n"
+
 	for _, entry := range forecastData.List {
 		hours := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
-		monthDay := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "01-02")
-
+		dayNum := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
+		dayOfWeek := utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "d")
 		if hours == "01" || hours == "02" {
-			forecast += monthDay + "\n"
+			forecast += dayNum + " " + utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m") + " (" + dayOfWeek + ")\n"
 		}
 
 		forecast += fmt.Sprintf("%s %v %v°C %d%% %.1f mmHg %.1f m/s %s\n",

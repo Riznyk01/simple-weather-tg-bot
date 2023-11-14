@@ -62,18 +62,18 @@ func GetWeather(city, tWeather string) (string, error) {
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 
-	userMessage := fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.1f°C  📉 %.1f°C ️ 📈 %.1f°C \n %.2f mmHg %.2f m/s (%s) \n\n🌅  %s 🌉  %s",
+	userMessage := fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.1f°C  📉 %.1f°C ️ 📈 %.1f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
-		utils.AddWeatherIcons(weatherData.Weather[0].Main),
+		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
 		weatherData.Main.Temp,
 		weatherData.Main.Humidity,
 		weatherData.Main.FeelsLike,
 		weatherData.Main.TempMin,
 		weatherData.Main.TempMax,
 		utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
+		utils.DegreesToDirectionIcon(weatherData.Wind.Deg),
 		weatherData.Wind.Speed,
-		utils.DegreesToDirection(weatherData.Wind.Deg),
 		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
 		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
