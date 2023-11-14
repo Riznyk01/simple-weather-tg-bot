@@ -6,22 +6,15 @@ func HPaToMmHg(hPa float64) float64 {
 	return hPa * 0.750061561303
 }
 
-func TimeStampToHuman(timeStamp, timezone int) string {
+func TimeStampToHuman(timeStamp, timezone int, format string) string {
 	location := time.FixedZone("Custom Timezone", timezone)
 	timeValue := time.Unix(int64(timeStamp), 0).In(location)
 	//return timeValue.Format("2006-01-02 15:04:05 -0700")
-	return timeValue.Format("15:04 -0700")
-}
-
-func TimeStampToHuman5d(timeStamp, timezone int) string {
-	location := time.FixedZone("Custom Timezone", timezone)
-	timeValue := time.Unix(int64(timeStamp), 0).In(location)
-	//return timeValue.Format("2006-01-02 15:04:05 -0700")
-	return timeValue.Format("01-02 15")
+	return timeValue.Format(format)
 }
 
 func DegreesToDirection(degrees float64) string {
-	if degrees < 22.5 {
+	if degrees >= 337.5 || degrees < 22.5 {
 		return "North ⬆️"
 	} else if degrees >= 22.5 && degrees < 67.5 {
 		return "Northeast ↗️"
@@ -37,6 +30,27 @@ func DegreesToDirection(degrees float64) string {
 		return "West ⬅️"
 	} else if degrees >= 292.5 && degrees < 337.5 {
 		return "Northwest ↖️"
+	}
+	return "Cannot determine"
+}
+
+func DegreesToDirectionIcon(degrees float64) string {
+	if degrees >= 337.5 || degrees < 22.5 {
+		return "⬆️"
+	} else if degrees >= 22.5 && degrees < 67.5 {
+		return "↗️"
+	} else if degrees >= 67.5 && degrees < 112.5 {
+		return "➡️"
+	} else if degrees >= 112.5 && degrees < 157.5 {
+		return "↘️"
+	} else if degrees >= 157.5 && degrees < 202.5 {
+		return "⬇️"
+	} else if degrees >= 202.5 && degrees < 247.5 {
+		return "↙️"
+	} else if degrees >= 247.5 && degrees < 292.5 {
+		return "⬅️"
+	} else if degrees >= 292.5 && degrees < 337.5 {
+		return "↖️"
 	}
 	return "Cannot determine"
 }
