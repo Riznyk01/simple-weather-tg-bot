@@ -1,6 +1,6 @@
 # SimpleWeatherTgBot
 
-SimpleWeatherTgBot is a Telegram bot written in Golang that provides weather information from the free OpenWeatherMap API. Users can input city names or send their locations to get weather updates.
+SimpleWeatherTgBot is a Telegram bot written in Golang that provides weather information from the free OpenWeatherMap API. Users can input city names or send their locations to receive current weather details on demand.
 
 ## Table of Contents
 
@@ -8,6 +8,7 @@ SimpleWeatherTgBot is a Telegram bot written in Golang that provides weather inf
 - [Installation](#installation)
 - [Usage](#usage)
 - [Bot Commands](#bot-commands)
+- [Pricing Information](#pricing-information)
 - [Note](#note)
 
 ## Environment Variables
@@ -54,6 +55,10 @@ sudo docker ps
 ## Bot Commands
 /start: Sends a welcome message and instructions to the user.
 /help: Provides information on how to use the bot.
+
+## Pricing Information
+Information about pricing, available plans, and limitations of the free API package can be found [here](https://openweathermap.org/price).
+
 ## Note
 Some cities may return weather information correctly using the city name, while others may require the user's location. Use the preferred option for accurate results.
 
