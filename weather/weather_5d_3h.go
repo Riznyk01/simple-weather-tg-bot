@@ -12,6 +12,9 @@ import (
 )
 
 func Get5DayForecast(fullUrlGet string) (string, error) {
+
+	text9 := "More information on the web link:"
+
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return "", err
@@ -32,7 +35,7 @@ func Get5DayForecast(fullUrlGet string) (string, error) {
 			}
 			err = json.Unmarshal(body, &errorResponse)
 			if err == nil {
-				return "", fmt.Errorf("%s. Try another city name", errorResponse.Message)
+				return "", fmt.Errorf("%s. \nTry another city name.", errorResponse.Message)
 			}
 		}
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
@@ -73,6 +76,6 @@ func Get5DayForecast(fullUrlGet string) (string, error) {
 
 	}
 	cityId := strconv.Itoa(forecastData.City.ID)
-	forecast += "\n" + "https://openweathermap.org/city/" + cityId
+	forecast += "\n\n" + text9 + "\n" + "https://openweathermap.org/city/" + cityId
 	return forecast, nil
 }

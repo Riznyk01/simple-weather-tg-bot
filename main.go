@@ -7,10 +7,10 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"strings"
 )
 
 var lat, lon float64
+var city string
 
 func main() {
 	err := godotenv.Load(".env.dev")
@@ -40,39 +40,29 @@ func main() {
 	}
 }
 func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string) {
+	text0 := "Choose an action:"
+	text1 := "Hello! This bot will send you weather information from openweathermap.org. "
+	text2 := "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
+	text4 := "current"
+	text5 := "5-days forecast"
+	text6 := "5-days forecast 📍"
+	text7 := "current 📍"
+	text8 := "Your location:"
 
 	if update.Message != nil {
 		var userMessage string
 		var err error
-
+		log.Println("User message:", update.Message.Text, " User's location:", update.Message.Location)
 		switch {
-		case update.Message.Text == "/f":
-			userMessage = "You haven't entered the city name. Please enter it in the following format: /f [city_name]."
-		case update.Message.Text == "/w":
-			userMessage = "You haven't entered the city name. Please enter it in the following format: /w [city_name]."
-		case update.Message.Text == "/start":
-			userMessage = "Hello! This bot will send you weather information from openweathermap.org. " +
-				"Type the name of the city in any language. Use /w for current weather and /f for a 5-day forecast." +
-				"If you have a city with a common name and want weather for a specific location, you can send your location to get accurate weather information."
-		case update.Message.Text == "/help":
-			userMessage = "/f - command for 5-day weather forecast. Format: /f [city_name]\n /w - command for current weather. Format: /w [city_name]"
-		case strings.HasPrefix(update.Message.Text, "/w"):
-			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/w"))
-			weatherNowUrl := weather.WeatherNowUrlByCity(city, tWeather)
-			userMessage, err = weather.GetWeather(weatherNowUrl)
-		case strings.HasPrefix(update.Message.Text, "/f"):
-			city := strings.TrimSpace(strings.TrimPrefix(update.Message.Text, "/f"))
-			weather5d3hUrl := weather.Weather5d3hUrlByCity(city, tWeather)
-			userMessage, err = weather.Get5DayForecast(weather5d3hUrl)
-		case update.Message.Location != nil:
-			lat = update.Message.Location.Latitude
-			lon = update.Message.Location.Longitude
-			chooseWeatherType := fmt.Sprintf("Your location: %v, %v. Choose an action:", lat, lon)
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, chooseWeatherType)
+		case update.Message.Text != "/start" && update.Message.Text != "/help" && update.Message.Location == nil && update.Message.Text != text4 && update.Message.Text != text5 && update.Message.Text != text6 && update.Message.Text != text7:
+			log.Println("Text received:", update.Message.Text)
+			city = update.Message.Text
+			userMessage = text0
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
 			keyboard := tgbotapi.NewReplyKeyboard(
 				tgbotapi.NewKeyboardButtonRow(
-					tgbotapi.NewKeyboardButton("5-day forecast"),
-					tgbotapi.NewKeyboardButton("current weather"),
+					tgbotapi.NewKeyboardButton(text4),
+					tgbotapi.NewKeyboardButton(text5),
 				),
 			)
 			msg.ReplyMarkup = keyboard
@@ -81,29 +71,79 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 				errorMessage := err.Error()
 				log.Println("Error: ", errorMessage)
 			}
-		case update.Message.Text == "5-day forecast":
+		case update.Message.Text == "/start":
+			userMessage = text1 + text2
+		case update.Message.Text == "/help":
+			userMessage = text2
+		case update.Message.Text == text4:
+			weatherNowUrl := weather.WeatherNowUrlByCity(city, tWeather)
+			log.Println("Case current (by city) choosed, url:", weatherNowUrl)
+			userMessage, err = weather.GetWeather(weatherNowUrl)
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("Error: ", errorMessage)
+				userMessage = errorMessage
+			}
+		case update.Message.Text == text5:
+			weather5d3hUrl := weather.Weather5d3hUrlByCity(city, tWeather)
+			log.Println("Case forecast (by city) choosed, url:", weather5d3hUrl)
+			userMessage, err = weather.Get5DayForecast(weather5d3hUrl)
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("Error: ", errorMessage)
+				userMessage = errorMessage
+			}
+		case update.Message.Location != nil:
+			fmt.Println("Case location")
+			lat = update.Message.Location.Latitude
+			lon = update.Message.Location.Longitude
+			chooseWeatherType := fmt.Sprintf("%s %v, %v. %s", text8, lat, lon, text0)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, chooseWeatherType)
+			keyboard := tgbotapi.NewReplyKeyboard(
+				tgbotapi.NewKeyboardButtonRow(
+					tgbotapi.NewKeyboardButton(text6),
+					tgbotapi.NewKeyboardButton(text7),
+				),
+			)
+			msg.ReplyMarkup = keyboard
+			_, err := bot.Send(msg)
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("Error: ", errorMessage)
+			}
+		case update.Message.Text == text6:
 			latStr := fmt.Sprintf("%f", lat)
 			lonStr := fmt.Sprintf("%f", lon)
 			weatherNowUrl := weather.Weather5d3hUrlByLocation(latStr, lonStr, tWeather)
+			log.Println("5-days forecast (by location) choosed, url:", weatherNowUrl)
 			userMessage, err = weather.Get5DayForecast(weatherNowUrl)
-		case update.Message.Text == "current weather":
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("5-days forecast (by location) error: ", errorMessage)
+			}
+		case update.Message.Text == text7:
 			latStr := fmt.Sprintf("%f", lat)
 			lonStr := fmt.Sprintf("%f", lon)
 			weatherNowUrl := weather.WeatherNowUrlByLocation(latStr, lonStr, tWeather)
-			fmt.Println(weatherNowUrl)
+			log.Println("Current weather (by location) choosed, url:", weatherNowUrl)
 			userMessage, err = weather.GetWeather(weatherNowUrl)
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("Current weather (by location) error: ", errorMessage)
+			}
 		default:
-			userMessage = "Invalid command. Use /w [city] for current weather or /f [city] for a 5-day forecast."
+			userMessage = text2
 		}
+		if userMessage != "" {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
+			msg.ParseMode = "HTML"
+			msg.ReplyToMessageID = update.Message.MessageID
 
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
-		msg.ParseMode = "HTML"
-		msg.ReplyToMessageID = update.Message.MessageID
-
-		_, err = bot.Send(msg)
-		if err != nil {
-			errorMessage := err.Error()
-			log.Println("Error: ", errorMessage)
+			_, err = bot.Send(msg)
+			if err != nil {
+				errorMessage := err.Error()
+				log.Println("Error: ", errorMessage)
+			}
 		}
 	}
 }

@@ -13,6 +13,8 @@ import (
 
 func GetWeather(fullUrlGet string) (string, error) {
 
+	text9 := "More information on the web link:"
+
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return "", err
@@ -33,7 +35,7 @@ func GetWeather(fullUrlGet string) (string, error) {
 			}
 			err = json.Unmarshal(body, &errorResponse)
 			if err == nil {
-				return "", fmt.Errorf("%s. Try another city name", errorResponse.Message)
+				return "", fmt.Errorf("%s. \nTry another city name.", errorResponse.Message)
 			}
 		}
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
@@ -47,7 +49,7 @@ func GetWeather(fullUrlGet string) (string, error) {
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 
-	userMessage := fmt.Sprintf("%s %s - %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.1f°C  📉 %.1f°C ️ 📈 %.1f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
+	userMessage := fmt.Sprintf("%s %s \n %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
 		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
@@ -63,7 +65,7 @@ func GetWeather(fullUrlGet string) (string, error) {
 		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
 	cityId := strconv.Itoa(weatherData.ID)
-	userMessage += "\n\n" + "https://openweathermap.org/city/" + cityId
+	userMessage += "\n\n" + text9 + "\n" + "https://openweathermap.org/city/" + cityId
 
 	return userMessage, nil
 }

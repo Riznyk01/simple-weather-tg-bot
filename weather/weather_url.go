@@ -56,7 +56,7 @@ func WeatherNowUrlByLocation(latStr, lonStr, tWeather string) string {
 	q.Add("lat", latStr)
 	q.Add("lon", lonStr)
 	q.Add("appid", tWeather)
-	//q.Add("units", "metric")
+	q.Add("units", "metric")
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
 	return fullUrlGet
@@ -76,7 +76,7 @@ func Weather5d3hUrlByLocation(latStr, lonStr, tWeather string) string {
 	q.Add("lat", latStr)
 	q.Add("lon", lonStr)
 	q.Add("appid", tWeather)
-	//q.Add("units", "metric")
+	q.Add("units", "metric")
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
 	return fullUrlGet
