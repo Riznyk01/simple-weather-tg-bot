@@ -18,7 +18,14 @@ BOT_TOKEN=YOUR_BOT_TOKEN
 
 WEATHER_KEY=YOUR_OPENWEATHERMAP_API_KEY
 
-Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token and `YOUR_OPENWEATHERMAP_API_KEY` with your free OpenWeatherMap API Key.
+Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by creating a new bot on Telegram. Follow these steps:
+
+1. Open Telegram and search for the "BotFather" bot (@BotFather).
+2. Start a chat with BotFather and use the `/newbot` command to create a new bot.
+3. Follow the instructions from BotFather to choose a name and username for your bot.
+4. Once the bot is created, BotFather will provide you with a token. Copy the token and replace `YOUR_BOT_TOKEN` in the `.env.dev` file.
+
+Get your free OpenWeatherMap API Key [here](https://home.openweathermap.org/api_keys).
 
 ## Installation
 
