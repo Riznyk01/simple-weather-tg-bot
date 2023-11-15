@@ -49,7 +49,7 @@ func GetWeather(fullUrlGet string) (string, error) {
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 
-	userMessage := fmt.Sprintf("%s %s \n %s 🌡 %.1f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
+	userMessage := fmt.Sprintf("%s %s \n %s 🌡 %.0f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
 		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),

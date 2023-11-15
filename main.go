@@ -76,18 +76,18 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 		case update.Message.Text == "/help":
 			userMessage = text2
 		case update.Message.Text == text4:
-			weatherNowUrl := weather.WeatherNowUrlByCity(city, tWeather)
-			log.Println("Case current (by city) choosed, url:", weatherNowUrl)
-			userMessage, err = weather.GetWeather(weatherNowUrl)
+			weatherUrl := weather.WeatherUrlByCity(city, tWeather, "current")
+			log.Println("Case current (by city) choosed, url:", weatherUrl)
+			userMessage, err = weather.GetWeather(weatherUrl)
 			if err != nil {
 				errorMessage := err.Error()
 				log.Println("Error: ", errorMessage)
 				userMessage = errorMessage
 			}
 		case update.Message.Text == text5:
-			weather5d3hUrl := weather.Weather5d3hUrlByCity(city, tWeather)
-			log.Println("Case forecast (by city) choosed, url:", weather5d3hUrl)
-			userMessage, err = weather.Get5DayForecast(weather5d3hUrl)
+			weatherUrl := weather.WeatherUrlByCity(city, tWeather, "5d3h")
+			log.Println("Case forecast (by city) choosed, url:", weatherUrl)
+			userMessage, err = weather.Get5DayForecast(weatherUrl)
 			if err != nil {
 				errorMessage := err.Error()
 				log.Println("Error: ", errorMessage)
@@ -114,7 +114,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 		case update.Message.Text == text6:
 			latStr := fmt.Sprintf("%f", lat)
 			lonStr := fmt.Sprintf("%f", lon)
-			weatherNowUrl := weather.Weather5d3hUrlByLocation(latStr, lonStr, tWeather)
+			weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "5d3h")
 			log.Println("5-days forecast (by location) choosed, url:", weatherNowUrl)
 			userMessage, err = weather.Get5DayForecast(weatherNowUrl)
 			if err != nil {
@@ -124,7 +124,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 		case update.Message.Text == text7:
 			latStr := fmt.Sprintf("%f", lat)
 			lonStr := fmt.Sprintf("%f", lon)
-			weatherNowUrl := weather.WeatherNowUrlByLocation(latStr, lonStr, tWeather)
+			weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "current")
 			log.Println("Current weather (by location) choosed, url:", weatherNowUrl)
 			userMessage, err = weather.GetWeather(weatherNowUrl)
 			if err != nil {
