@@ -9,10 +9,19 @@ import (
 	"os"
 )
 
-var lat, lon float64
-var city string
+var city, latStr, lonStr string
 
 func main() {
+
+	text0 := "Choose an action:"
+	text1 := "Hello! This bot will send you weather information from openweathermap.org. "
+	text2 := "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
+	text4 := "current"
+	text5 := "5-days forecast"
+	text6 := "5-days forecast 📍"
+	text7 := "current 📍"
+	text8 := "Your location:"
+
 	err := godotenv.Load(".env.dev")
 	if err != nil {
 		return
@@ -36,15 +45,6 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		text0 := "Choose an action:"
-		text1 := "Hello! This bot will send you weather information from openweathermap.org. "
-		text2 := "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
-		text4 := "current"
-		text5 := "5-days forecast"
-		text6 := "5-days forecast 📍"
-		text7 := "current 📍"
-		text8 := "Your location:"
-
 		if update.Message != nil {
 			var userMessage string
 			var err error
@@ -101,9 +101,8 @@ func main() {
 				}
 			case update.Message.Location != nil:
 				fmt.Println("Case location")
-				lat = update.Message.Location.Latitude
-				lon = update.Message.Location.Longitude
-				chooseWeatherType := fmt.Sprintf("%s %v, %v. %s", text8, lat, lon, text0)
+				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
+				chooseWeatherType := fmt.Sprintf("%s %v, %v. %s", text8, latStr, lonStr, text0)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, chooseWeatherType)
 				keyboard := tgbotapi.NewReplyKeyboard(
 					tgbotapi.NewKeyboardButtonRow(
@@ -118,8 +117,6 @@ func main() {
 					log.Println("Error: ", errorMessage)
 				}
 			case update.Message.Text == text6:
-				latStr := fmt.Sprintf("%f", lat)
-				lonStr := fmt.Sprintf("%f", lon)
 				weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "5d3h")
 				log.Println("5-days forecast (by location) choosed, url:", weatherNowUrl)
 				userMessage, err = weather.Get5DayForecast(weatherNowUrl)
@@ -128,8 +125,6 @@ func main() {
 					log.Println("5-days forecast (by location) error: ", errorMessage)
 				}
 			case update.Message.Text == text7:
-				latStr := fmt.Sprintf("%f", lat)
-				lonStr := fmt.Sprintf("%f", lon)
 				weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "current")
 				log.Println("Current weather (by location) choosed, url:", weatherNowUrl)
 				userMessage, err = weather.GetWeather(weatherNowUrl)
