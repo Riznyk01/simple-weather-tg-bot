@@ -76,22 +76,32 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, tWeather string)
 		case update.Message.Text == "/help":
 			userMessage = text2
 		case update.Message.Text == text4:
-			weatherUrl := weather.WeatherUrlByCity(city, tWeather, "current")
-			log.Println("Case current (by city) choosed, url:", weatherUrl)
-			userMessage, err = weather.GetWeather(weatherUrl)
-			if err != nil {
-				errorMessage := err.Error()
-				log.Println("Error: ", errorMessage)
-				userMessage = errorMessage
+			if city != "" {
+				weatherUrl := weather.WeatherUrlByCity(city, tWeather, "current")
+				log.Println("Case current (by city) choosed, url:", weatherUrl)
+				userMessage, err = weather.GetWeather(weatherUrl)
+				if err != nil {
+					errorMessage := err.Error()
+					log.Println("Error: ", errorMessage)
+					userMessage = errorMessage
+				}
+				city = ""
+			} else {
+				userMessage = "You did not enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
 			}
 		case update.Message.Text == text5:
-			weatherUrl := weather.WeatherUrlByCity(city, tWeather, "5d3h")
-			log.Println("Case forecast (by city) choosed, url:", weatherUrl)
-			userMessage, err = weather.Get5DayForecast(weatherUrl)
-			if err != nil {
-				errorMessage := err.Error()
-				log.Println("Error: ", errorMessage)
-				userMessage = errorMessage
+			if city != "" {
+				weatherUrl := weather.WeatherUrlByCity(city, tWeather, "5d3h")
+				log.Println("Case forecast (by city) choosed, url:", weatherUrl)
+				userMessage, err = weather.Get5DayForecast(weatherUrl)
+				if err != nil {
+					errorMessage := err.Error()
+					log.Println("Error: ", errorMessage)
+					userMessage = errorMessage
+				}
+				city = ""
+			} else {
+				userMessage = "You did not enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
 			}
 		case update.Message.Location != nil:
 			fmt.Println("Case location")

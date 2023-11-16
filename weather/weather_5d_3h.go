@@ -49,19 +49,24 @@ func Get5DayForecast(fullUrlGet string) (string, error) {
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 	var forecast string
-
-	forecast += forecastData.City.Country + " " + forecastData.City.Name + "\n\n" + utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02") + " " + utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m") + " (" + utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d") + ")\n"
+	// Creating a string to display the country and city names
+	forecast += fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
+	// Constructing the date display, including day, month, and day of the week,
+	// to be inserted into the user message about the weather.
+	forecast += fmt.Sprintf("<b>🔅%s %s (%s)</b>\n", utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
 
 	for _, entry := range forecastData.List {
 		hours := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
 		dayNum := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
 		dayOfWeek := utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "d")
 		if hours == "01" || hours == "02" {
-			forecast += dayNum + " " + utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m") + " (" + dayOfWeek + ")\n"
+			// Constructing the date display, including day, month, and day of the week,
+			// to be inserted into the user message about the weather.
+			forecast += fmt.Sprintf("<b>🔅%s %s (%s)</b>\n", dayNum, utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
 		}
 
 		forecast += fmt.Sprintf("%s %v %v°C %d%% %.1f mmHg %.1f m/s %s\n",
-			hours+"h",
+			hours,
 			utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
 			int(entry.Main.Temp),
 			entry.Main.Humidity,
