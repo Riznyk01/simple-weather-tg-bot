@@ -11,7 +11,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string) string {
 
 	if forecastType == "current" {
 		weatherUrl = "https://api.openweathermap.org/data/2.5/weather?"
-	} else if forecastType == "5d3h" {
+	} else if forecastType == "5-days forecast" {
 		weatherUrl = "https://api.openweathermap.org/data/2.5/forecast?"
 	}
 
@@ -35,9 +35,9 @@ func WeatherUrlByCity(city, tWeather, forecastType string) string {
 func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) string {
 	var weatherUrl string
 
-	if forecastType == "current" {
+	if forecastType == "current 📍" {
 		weatherUrl = "https://api.openweathermap.org/data/2.5/weather?"
-	} else if forecastType == "5d3h" {
+	} else if forecastType == "5-days forecast 📍" {
 		weatherUrl = "https://api.openweathermap.org/data/2.5/forecast?"
 	}
 

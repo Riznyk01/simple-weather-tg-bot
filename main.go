@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-var city, latStr, lonStr string
+var city, latStr, lonStr, userMessage string
 
 // Constants for commands
 const (
@@ -27,12 +27,6 @@ const (
 	HelpMessage         = "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
 	MissingCityMessage  = "You didn't enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
 	ChooseOptionMessage = "Choose an action:"
-)
-
-// Constants for weather types
-const (
-	WeatherTypeCurrent  = "current"
-	WeatherTypeForecast = "5d3h"
 )
 
 func main() {
@@ -58,30 +52,17 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
+
 		if update.Message != nil {
-			var userMessage string
-			var err error
 			switch {
 			case update.Message.Text == CommandStart:
 				sendMessage(bot, update.Message.Chat.ID, WelcomeMessage+HelpMessage)
 			case update.Message.Text == CommandHelp:
 				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
-			case update.Message.Text == CommandCurrent:
+			case update.Message.Text == CommandCurrent || update.Message.Text == CommandForecast:
 				if city != "" {
-					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeCurrent)
-					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
-					if err != nil {
-						userMessage = HandleErrorMessage("", err)
-					}
-					sendMessage(bot, update.Message.Chat.ID, userMessage)
-					city = ""
-				} else {
-					sendMessage(bot, update.Message.Chat.ID, MissingCityMessage)
-				}
-			case update.Message.Text == CommandForecast:
-				if city != "" {
-					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeForecast)
-					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
+					weatherUrl := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
+					userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 					if err != nil {
 						userMessage = HandleErrorMessage("", err)
 					}
@@ -91,22 +72,14 @@ func main() {
 					sendMessage(bot, update.Message.Chat.ID, MissingCityMessage)
 				}
 			case update.Message.Location != nil:
-				latStr = fmt.Sprintf("%f", update.Message.Location.Latitude)
-				lonStr = fmt.Sprintf("%f", update.Message.Location.Longitude)
+				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
 				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
 				if err != nil {
 					HandleError("", err)
 				}
-			case update.Message.Text == CommandForecastLocation:
-				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeForecast)
-				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
-				if err != nil {
-					HandleError("", err)
-				}
-				sendMessage(bot, update.Message.Chat.ID, userMessage)
-			case update.Message.Text == CommandCurrentLocation:
-				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeCurrent)
-				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
+			case update.Message.Text == CommandForecastLocation || update.Message.Text == CommandCurrentLocation:
+				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
+				userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 				if err != nil {
 					HandleError("", err)
 				}

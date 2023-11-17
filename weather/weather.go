@@ -41,7 +41,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 		}
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
 	}
-	if forecastType == "current" {
+	if forecastType == "current" || forecastType == "current 📍" {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
 			errorMessage := err.Error()
@@ -65,7 +65,8 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 
 		cityId := strconv.Itoa(weatherData.ID)
 		userMessage += "\n\n" + "More information on the web link:" + "\n" + "https://openweathermap.org/city/" + cityId
-	} else if forecastType == "5d3h" {
+
+	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
 			errorMessage := err.Error()
