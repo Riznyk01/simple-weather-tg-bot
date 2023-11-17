@@ -62,7 +62,10 @@ func main() {
 				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
 			case update.Message.Text == CommandCurrent || update.Message.Text == CommandForecast:
 				if city != "" {
-					weatherUrl := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
+					weatherUrl, err := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
+					if err != nil {
+						log.Println(e.Wrap("", err))
+					}
 					userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 					if err != nil {
 						log.Println(e.Wrap("", err))
@@ -81,9 +84,13 @@ func main() {
 				}
 			case update.Message.Text == CommandForecastLocation || update.Message.Text == CommandCurrentLocation:
 				weatherUrl, err := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
+				if err != nil {
+					log.Println(e.Wrap("", err))
+				}
 				userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 				if err != nil {
 					log.Println(e.Wrap("", err))
+					userMessage = e.Wrap("", err).Error()
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:

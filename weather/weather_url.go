@@ -2,23 +2,25 @@ package weather
 
 import (
 	"SimpleWeatherTgBot/lib/e"
-	"log"
 	"net/url"
 )
 
-func WeatherUrlByCity(city, tWeather, forecastType string) string {
+const (
+	apiWeatherUrl = "https://api.openweathermap.org/data/2.5/"
+)
+
+func WeatherUrlByCity(city, tWeather, forecastType string) (string, error) {
 	var weatherUrl string
 
 	if forecastType == "current" {
-		weatherUrl = "https://api.openweathermap.org/data/2.5/weather?"
+		weatherUrl = apiWeatherUrl + "weather?"
 	} else if forecastType == "5-days forecast" {
-		weatherUrl = "https://api.openweathermap.org/data/2.5/forecast?"
+		weatherUrl = apiWeatherUrl + "forecast?"
 	}
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		log.Println(e.Wrap("", err))
-		return ""
+		return "", e.Wrap("", err)
 	}
 
 	q := url.Values{}
@@ -27,16 +29,16 @@ func WeatherUrlByCity(city, tWeather, forecastType string) string {
 	q.Add("units", "metric")
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-	return fullUrlGet
+	return fullUrlGet, nil
 }
 
 func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) (string, error) {
 	var weatherUrl string
 
 	if forecastType == "current 📍" {
-		weatherUrl = "https://api.openweathermap.org/data/2.5/weather?"
+		weatherUrl = apiWeatherUrl + "weather?"
 	} else if forecastType == "5-days forecast 📍" {
-		weatherUrl = "https://api.openweathermap.org/data/2.5/forecast?"
+		weatherUrl = apiWeatherUrl + "forecast?"
 	}
 
 	u, err := url.Parse(weatherUrl)
