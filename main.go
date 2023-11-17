@@ -71,7 +71,7 @@ func main() {
 					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeCurrent)
 					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
 					if err != nil {
-						userMessage = handleErrorMessage("", err)
+						userMessage = HandleErrorMessage("", err)
 					}
 					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
@@ -83,7 +83,7 @@ func main() {
 					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeForecast)
 					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
 					if err != nil {
-						userMessage = handleErrorMessage("", err)
+						userMessage = HandleErrorMessage("", err)
 					}
 					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
@@ -95,27 +95,27 @@ func main() {
 				lonStr = fmt.Sprintf("%f", update.Message.Location.Longitude)
 				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
 				if err != nil {
-					handleError("", err)
+					HandleError("", err)
 				}
 			case update.Message.Text == CommandForecastLocation:
 				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeForecast)
 				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
 				if err != nil {
-					handleError("", err)
+					HandleError("", err)
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			case update.Message.Text == CommandCurrentLocation:
 				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeCurrent)
 				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
 				if err != nil {
-					handleError("", err)
+					HandleError("", err)
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:
 				city = update.Message.Text
 				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
 				if err != nil {
-					handleError("", err)
+					HandleError("", err)
 				}
 			}
 		}
@@ -148,15 +148,6 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
 
 	_, err := bot.Send(msg)
 	if err != nil {
-		handleError("", err)
+		HandleError("", err)
 	}
-}
-func handleError(msg string, err error) {
-	errorMessage := err.Error()
-	log.Println(msg, errorMessage)
-}
-func handleErrorMessage(msg string, err error) string {
-	errorMessage := err.Error()
-	log.Println(msg, errorMessage)
-	return errorMessage
 }
