@@ -11,6 +11,30 @@ import (
 
 var city, latStr, lonStr string
 
+// Constants for commands
+const (
+	CommandStart            = "/start"
+	CommandHelp             = "/help"
+	CommandCurrent          = "current"
+	CommandForecast         = "5-days forecast"
+	CommandForecastLocation = "5-days forecast 📍"
+	CommandCurrentLocation  = "current 📍"
+)
+
+// Constants for messages
+const (
+	WelcomeMessage      = "Hello! This bot will send you weather information from openweathermap.org. "
+	HelpMessage         = "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
+	MissingCityMessage  = "You didn't enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
+	ChooseOptionMessage = "Choose an action:"
+)
+
+// Constants for weather types
+const (
+	WeatherTypeCurrent  = "current"
+	WeatherTypeForecast = "5d3h"
+)
+
 func main() {
 
 	err := godotenv.Load(".env.dev")
@@ -24,10 +48,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-
 	bot.Debug = false
 	log.SetOutput(os.Stderr)
-
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
@@ -39,87 +61,64 @@ func main() {
 		if update.Message != nil {
 			var userMessage string
 			var err error
-			log.Println("User message:", update.Message.Text, " User's location:", update.Message.Location)
 			switch {
-			case update.Message.Text != "/start" && update.Message.Text != "/help" && update.Message.Location == nil && update.Message.Text != "current" && update.Message.Text != "5-days forecast" && update.Message.Text != "5-days forecast 📍" && update.Message.Text != "current 📍":
-				log.Println("Text received:", update.Message.Text)
+			case update.Message.Text != CommandStart && update.Message.Text != CommandHelp && update.Message.Location == nil && update.Message.Text != CommandCurrent && update.Message.Text != CommandForecast && update.Message.Text != CommandForecastLocation && update.Message.Text != CommandCurrentLocation:
 				city = update.Message.Text
-				userMessage = "Choose an action:"
-				err := sendMessageWithKeyboard(bot, update.Message.Chat.ID, userMessage, "current", "5-days forecast")
+				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
 				if err != nil {
-					errorMessage := err.Error()
-					log.Println("Error: ", errorMessage)
+					handleError("", err)
 				}
-			case update.Message.Text == "/start":
-				userMessage = "Hello! This bot will send you weather information from openweathermap.org. " +
-					"Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
-			case update.Message.Text == "/help":
-				userMessage = "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
-			case update.Message.Text == "current":
+			case update.Message.Text == CommandStart:
+				sendMessage(bot, update.Message.Chat.ID, WelcomeMessage+HelpMessage)
+			case update.Message.Text == CommandHelp:
+				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
+			case update.Message.Text == CommandCurrent:
 				if city != "" {
-					weatherUrl := weather.WeatherUrlByCity(city, tWeather, "current")
-					log.Println("Case current (by city) choosed, url:", weatherUrl)
-					userMessage, err = weather.GetWeather(weatherUrl, "current")
+					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeCurrent)
+					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
 					if err != nil {
-						errorMessage := err.Error()
-						log.Println("Error: ", errorMessage)
-						userMessage = errorMessage
+						userMessage = handleErrorMessage("", err)
 					}
+					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
 				} else {
-					userMessage = "You didn't enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
+					sendMessage(bot, update.Message.Chat.ID, MissingCityMessage)
 				}
-			case update.Message.Text == "5-days forecast":
+			case update.Message.Text == CommandForecast:
 				if city != "" {
-					weatherUrl := weather.WeatherUrlByCity(city, tWeather, "5d3h")
-					log.Println("Case forecast (by city) choosed, url:", weatherUrl)
-					userMessage, err = weather.GetWeather(weatherUrl, "5d3h")
+					weatherUrl := weather.WeatherUrlByCity(city, tWeather, WeatherTypeForecast)
+					userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
 					if err != nil {
-						errorMessage := err.Error()
-						log.Println("Error: ", errorMessage)
-						userMessage = errorMessage
+						userMessage = handleErrorMessage("", err)
 					}
+					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
 				} else {
-					userMessage = "You did not enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
+					sendMessage(bot, update.Message.Chat.ID, MissingCityMessage)
 				}
 			case update.Message.Location != nil:
-				fmt.Println("Case location")
-				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-				err := sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
+				latStr = fmt.Sprintf("%f", update.Message.Location.Latitude)
+				lonStr = fmt.Sprintf("%f", update.Message.Location.Longitude)
+				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
 				if err != nil {
-					errorMessage := err.Error()
-					log.Println("Error: ", errorMessage)
+					handleError("", err)
 				}
-			case update.Message.Text == "5-days forecast 📍":
-				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "5d3h")
-				log.Println("5-days forecast (by location) choosed, url:", weatherUrl)
-				userMessage, err = weather.GetWeather(weatherUrl, "5d3h")
+			case update.Message.Text == CommandForecastLocation:
+				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeForecast)
+				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeForecast)
 				if err != nil {
-					errorMessage := err.Error()
-					log.Println("5-days forecast (by location) error: ", errorMessage)
+					handleError("", err)
 				}
-			case update.Message.Text == "current 📍":
-				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "current")
-				log.Println("Current weather (by location) choosed, url:", weatherUrl)
-				userMessage, err = weather.GetWeather(weatherUrl, "current")
+				sendMessage(bot, update.Message.Chat.ID, userMessage)
+			case update.Message.Text == CommandCurrentLocation:
+				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, WeatherTypeCurrent)
+				userMessage, err = weather.GetWeather(weatherUrl, WeatherTypeCurrent)
 				if err != nil {
-					errorMessage := err.Error()
-					log.Println("Current weather (by location) error: ", errorMessage)
+					handleError("", err)
 				}
+				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:
-				userMessage = "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
-			}
-			if userMessage != "" {
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMessage)
-				msg.ParseMode = "HTML"
-				msg.ReplyToMessageID = update.Message.MessageID
-
-				_, err = bot.Send(msg)
-				if err != nil {
-					errorMessage := err.Error()
-					log.Println("Error: ", errorMessage)
-				}
+				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
 			}
 		}
 	}
@@ -141,6 +140,25 @@ func sendMessageWithKeyboard(bot *tgbotapi.BotAPI, chatID int64, text string, bu
 
 // sendLocationOptions sends a message with location-related options.
 func sendLocationOptions(bot *tgbotapi.BotAPI, chatID int64, latStr, lonStr string) error {
-	chooseWeatherType := fmt.Sprintf("Your location: %s %v, %v. Choose an action:", latStr, lonStr, "Choose an action:")
-	return sendMessageWithKeyboard(bot, chatID, chooseWeatherType, "5-days forecast 📍", "current 📍")
+	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, ChooseOptionMessage)
+	return sendMessageWithKeyboard(bot, chatID, chooseWeatherType, CommandForecastLocation, CommandCurrentLocation)
+}
+
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "HTML"
+
+	_, err := bot.Send(msg)
+	if err != nil {
+		handleError("", err)
+	}
+}
+func handleError(msg string, err error) {
+	errorMessage := err.Error()
+	log.Println(msg, errorMessage)
+}
+func handleErrorMessage(msg string, err error) string {
+	errorMessage := err.Error()
+	log.Println(msg, errorMessage)
+	return errorMessage
 }
