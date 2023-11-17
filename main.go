@@ -62,12 +62,6 @@ func main() {
 			var userMessage string
 			var err error
 			switch {
-			case update.Message.Text != CommandStart && update.Message.Text != CommandHelp && update.Message.Location == nil && update.Message.Text != CommandCurrent && update.Message.Text != CommandForecast && update.Message.Text != CommandForecastLocation && update.Message.Text != CommandCurrentLocation:
-				city = update.Message.Text
-				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
-				if err != nil {
-					handleError("", err)
-				}
 			case update.Message.Text == CommandStart:
 				sendMessage(bot, update.Message.Chat.ID, WelcomeMessage+HelpMessage)
 			case update.Message.Text == CommandHelp:
@@ -118,7 +112,11 @@ func main() {
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:
-				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
+				city = update.Message.Text
+				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
+				if err != nil {
+					handleError("", err)
+				}
 			}
 		}
 	}
