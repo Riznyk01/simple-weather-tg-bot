@@ -1,12 +1,12 @@
 package weather
 
 import (
+	"SimpleWeatherTgBot/lib/e"
 	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/utils"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -24,7 +24,6 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errorMessage := err.Error()
-		log.Println("Error: ", errorMessage)
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
 
@@ -44,9 +43,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 	if forecastType == "current" || forecastType == "current 📍" {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
-			errorMessage := err.Error()
-			log.Println("Error: ", errorMessage)
-			return "", fmt.Errorf("error: %s", errorMessage)
+			return "", e.Wrap("", err)
 		}
 		userMessage = fmt.Sprintf("%s %s \n %s 🌡 %.0f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
 			weatherData.Sys.Country,
@@ -69,9 +66,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
-			errorMessage := err.Error()
-			log.Println("Error: ", errorMessage)
-			return "", fmt.Errorf("error: %s", errorMessage)
+			return "", e.Wrap("", err)
 		}
 		// Creating a string to display the country and city names
 		userMessage = fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)

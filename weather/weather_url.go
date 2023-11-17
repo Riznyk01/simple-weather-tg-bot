@@ -1,7 +1,7 @@
 package weather
 
 import (
-	"fmt"
+	"SimpleWeatherTgBot/lib/e"
 	"log"
 	"net/url"
 )
@@ -17,9 +17,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string) string {
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		errorMessage := err.Error()
-		log.Println("Error: ", errorMessage)
-		fmt.Errorf("error: %s", errorMessage)
+		log.Println(e.Wrap("", err))
 		return ""
 	}
 
@@ -32,7 +30,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string) string {
 	return fullUrlGet
 }
 
-func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) string {
+func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) (string, error) {
 	var weatherUrl string
 
 	if forecastType == "current 📍" {
@@ -43,10 +41,7 @@ func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) string 
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		errorMessage := err.Error()
-		log.Println("Error: ", errorMessage)
-		fmt.Errorf("error: %s", errorMessage)
-		return ""
+		return "", e.Wrap("", err)
 	}
 
 	q := url.Values{}
@@ -56,5 +51,5 @@ func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string) string 
 	q.Add("units", "metric")
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-	return fullUrlGet
+	return fullUrlGet, nil
 }

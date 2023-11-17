@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SimpleWeatherTgBot/lib/e"
 	"SimpleWeatherTgBot/weather"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -33,7 +34,7 @@ func main() {
 
 	err := godotenv.Load(".env.dev")
 	if err != nil {
-		return
+		log.Println(e.Wrap("", err))
 	}
 	t := os.Getenv("BOT_TOKEN")
 	tWeather := os.Getenv("WEATHER_KEY")
@@ -64,7 +65,8 @@ func main() {
 					weatherUrl := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
 					userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 					if err != nil {
-						userMessage = HandleErrorMessage("", err)
+						log.Println(e.Wrap("", err))
+						userMessage = e.Wrap("", err).Error()
 					}
 					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
@@ -75,20 +77,20 @@ func main() {
 				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
 				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
 				if err != nil {
-					HandleError("", err)
+					log.Println(e.Wrap("", err))
 				}
 			case update.Message.Text == CommandForecastLocation || update.Message.Text == CommandCurrentLocation:
-				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
+				weatherUrl, err := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
 				userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
 				if err != nil {
-					HandleError("", err)
+					log.Println(e.Wrap("", err))
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:
 				city = update.Message.Text
 				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
 				if err != nil {
-					HandleError("", err)
+					log.Println(e.Wrap("", err))
 				}
 			}
 		}

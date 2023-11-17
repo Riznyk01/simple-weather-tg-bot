@@ -1,11 +1,13 @@
 package main
 
 import (
+	"SimpleWeatherTgBot/lib/e"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"log"
 )
 
-// sendMessageWithKeyboard sends a message with the specified text and keyboard buttons.
+// sends a message with text and buttons for weather type selection
 func sendMessageWithKeyboard(bot *tgbotapi.BotAPI, chatID int64, text string, buttons ...string) error {
 	msg := tgbotapi.NewMessage(chatID, text)
 	keyboardButtons := make([]tgbotapi.KeyboardButton, len(buttons))
@@ -19,7 +21,7 @@ func sendMessageWithKeyboard(bot *tgbotapi.BotAPI, chatID int64, text string, bu
 	return err
 }
 
-// sendLocationOptions sends a message with location-related options.
+// sends when requests for weather type is reported after the location is sent
 func sendLocationOptions(bot *tgbotapi.BotAPI, chatID int64, latStr, lonStr string) error {
 	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, ChooseOptionMessage)
 	return sendMessageWithKeyboard(bot, chatID, chooseWeatherType, CommandForecastLocation, CommandCurrentLocation)
@@ -31,6 +33,6 @@ func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
 
 	_, err := bot.Send(msg)
 	if err != nil {
-		HandleError("", err)
+		log.Println(e.Wrap("", err))
 	}
 }
