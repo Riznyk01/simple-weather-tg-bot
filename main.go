@@ -59,7 +59,7 @@ func main() {
 				if city != "" {
 					weatherUrl := weather.WeatherUrlByCity(city, tWeather, "current")
 					log.Println("Case current (by city) choosed, url:", weatherUrl)
-					userMessage, err = weather.GetWeather(weatherUrl)
+					userMessage, err = weather.GetWeather(weatherUrl, "current")
 					if err != nil {
 						errorMessage := err.Error()
 						log.Println("Error: ", errorMessage)
@@ -73,7 +73,7 @@ func main() {
 				if city != "" {
 					weatherUrl := weather.WeatherUrlByCity(city, tWeather, "5d3h")
 					log.Println("Case forecast (by city) choosed, url:", weatherUrl)
-					userMessage, err = weather.Get5DayForecast(weatherUrl)
+					userMessage, err = weather.GetWeather(weatherUrl, "5d3h")
 					if err != nil {
 						errorMessage := err.Error()
 						log.Println("Error: ", errorMessage)
@@ -92,17 +92,17 @@ func main() {
 					log.Println("Error: ", errorMessage)
 				}
 			case update.Message.Text == "5-days forecast 📍":
-				weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "5d3h")
-				log.Println("5-days forecast (by location) choosed, url:", weatherNowUrl)
-				userMessage, err = weather.Get5DayForecast(weatherNowUrl)
+				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "5d3h")
+				log.Println("5-days forecast (by location) choosed, url:", weatherUrl)
+				userMessage, err = weather.GetWeather(weatherUrl, "5d3h")
 				if err != nil {
 					errorMessage := err.Error()
 					log.Println("5-days forecast (by location) error: ", errorMessage)
 				}
 			case update.Message.Text == "current 📍":
-				weatherNowUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "current")
-				log.Println("Current weather (by location) choosed, url:", weatherNowUrl)
-				userMessage, err = weather.GetWeather(weatherNowUrl)
+				weatherUrl := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, "current")
+				log.Println("Current weather (by location) choosed, url:", weatherUrl)
+				userMessage, err = weather.GetWeather(weatherUrl, "current")
 				if err != nil {
 					errorMessage := err.Error()
 					log.Println("Current weather (by location) error: ", errorMessage)
