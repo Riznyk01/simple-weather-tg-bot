@@ -2,6 +2,7 @@ package main
 
 import (
 	"SimpleWeatherTgBot/lib/e"
+	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/weather"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,25 +11,7 @@ import (
 	"os"
 )
 
-var city, latStr, lonStr, userMessage string
-
-// Constants for commands
-const (
-	CommandStart            = "/start"
-	CommandHelp             = "/help"
-	CommandCurrent          = "current"
-	CommandForecast         = "5-days forecast"
-	CommandForecastLocation = "5-days forecast 📍"
-	CommandCurrentLocation  = "current 📍"
-)
-
-// Constants for messages
-const (
-	WelcomeMessage      = "Hello! This bot will send you weather information from openweathermap.org. "
-	HelpMessage         = "Enter the city name in any language, then choose the weather type, or send your location, and then also choose the weather type."
-	MissingCityMessage  = "You didn't enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
-	ChooseOptionMessage = "Choose an action:"
-)
+var city, latStr, lonStr string
 
 func main() {
 
@@ -56,17 +39,17 @@ func main() {
 
 		if update.Message != nil {
 			switch {
-			case update.Message.Text == CommandStart:
-				sendMessage(bot, update.Message.Chat.ID, WelcomeMessage+HelpMessage)
-			case update.Message.Text == CommandHelp:
-				sendMessage(bot, update.Message.Chat.ID, HelpMessage)
-			case update.Message.Text == CommandCurrent || update.Message.Text == CommandForecast:
+			case update.Message.Text == types.CommandStart:
+				sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
+			case update.Message.Text == types.CommandHelp:
+				sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
+			case update.Message.Text == types.CommandCurrent || update.Message.Text == types.CommandForecast:
 				if city != "" {
 					weatherUrl, err := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
 					if err != nil {
 						log.Println(e.Wrap("", err))
 					}
-					userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
+					userMessage, err := weather.GetWeather(weatherUrl, update.Message.Text)
 					if err != nil {
 						log.Println(e.Wrap("", err))
 						userMessage = e.Wrap("", err).Error()
@@ -74,7 +57,7 @@ func main() {
 					sendMessage(bot, update.Message.Chat.ID, userMessage)
 					city = ""
 				} else {
-					sendMessage(bot, update.Message.Chat.ID, MissingCityMessage)
+					sendMessage(bot, update.Message.Chat.ID, types.MissingCityMessage)
 				}
 			case update.Message.Location != nil:
 				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
@@ -82,12 +65,12 @@ func main() {
 				if err != nil {
 					log.Println(e.Wrap("", err))
 				}
-			case update.Message.Text == CommandForecastLocation || update.Message.Text == CommandCurrentLocation:
+			case update.Message.Text == types.CommandForecastLocation || update.Message.Text == types.CommandCurrentLocation:
 				weatherUrl, err := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
 				if err != nil {
 					log.Println(e.Wrap("", err))
 				}
-				userMessage, err = weather.GetWeather(weatherUrl, update.Message.Text)
+				userMessage, err := weather.GetWeather(weatherUrl, update.Message.Text)
 				if err != nil {
 					log.Println(e.Wrap("", err))
 					userMessage = e.Wrap("", err).Error()
@@ -95,7 +78,7 @@ func main() {
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
 			default:
 				city = update.Message.Text
-				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, ChooseOptionMessage, CommandCurrent, CommandForecast)
+				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 				if err != nil {
 					log.Println(e.Wrap("", err))
 				}
