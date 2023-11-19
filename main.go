@@ -2,6 +2,7 @@ package main
 
 import (
 	"SimpleWeatherTgBot/lib/e"
+	"SimpleWeatherTgBot/logger"
 	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/weather"
 	"fmt"
@@ -17,14 +18,14 @@ func main() {
 
 	err := godotenv.Load(".env.dev")
 	if err != nil {
-		log.Println(e.Wrap("", err))
+		logger.ForError(err)
 	}
 	t := os.Getenv("BOT_TOKEN")
 	tWeather := os.Getenv("WEATHER_KEY")
 
 	bot, err := tgbotapi.NewBotAPI(t)
 	if err != nil {
-		log.Panic(err)
+		logger.ForError(e.Wrap("", err))
 	}
 	bot.Debug = false
 	log.SetOutput(os.Stderr)
@@ -47,11 +48,11 @@ func main() {
 				if city != "" {
 					weatherUrl, err := weather.WeatherUrlByCity(city, tWeather, update.Message.Text)
 					if err != nil {
-						log.Println(e.Wrap("", err))
+						logger.ForErrorPrint(e.Wrap("", err))
 					}
 					userMessage, err := weather.GetWeather(weatherUrl, update.Message.Text)
 					if err != nil {
-						log.Println(e.Wrap("", err))
+						logger.ForErrorPrint(e.Wrap("", err))
 						userMessage = e.Wrap("", err).Error()
 					}
 					sendMessage(bot, update.Message.Chat.ID, userMessage)
@@ -63,16 +64,16 @@ func main() {
 				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
 				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
 				if err != nil {
-					log.Println(e.Wrap("", err))
+					logger.ForErrorPrint(e.Wrap("", err))
 				}
 			case update.Message.Text == types.CommandForecastLocation || update.Message.Text == types.CommandCurrentLocation:
 				weatherUrl, err := weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.Message.Text)
 				if err != nil {
-					log.Println(e.Wrap("", err))
+					logger.ForErrorPrint(e.Wrap("", err))
 				}
 				userMessage, err := weather.GetWeather(weatherUrl, update.Message.Text)
 				if err != nil {
-					log.Println(e.Wrap("", err))
+					logger.ForErrorPrint(e.Wrap("", err))
 					userMessage = e.Wrap("", err).Error()
 				}
 				sendMessage(bot, update.Message.Chat.ID, userMessage)
@@ -80,7 +81,7 @@ func main() {
 				city = update.Message.Text
 				err = sendMessageWithKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 				if err != nil {
-					log.Println(e.Wrap("", err))
+					logger.ForErrorPrint(e.Wrap("", err))
 				}
 			}
 		}
