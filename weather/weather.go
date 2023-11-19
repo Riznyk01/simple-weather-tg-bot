@@ -82,9 +82,17 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 				// Constructing the date display, including day, month, and day of the week,
 				// to be inserted into the user message about the weather.
 				userMessage += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", dayNum, utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
+				userMessage += fmt.Sprintf("[%s] %s [%s] [%s] [%s] [%s]\n",
+					"h",
+					"---",
+					"°C",
+					"%",
+					"mmHg",
+					"m/s",
+				)
 			}
 
-			userMessage += fmt.Sprintf("%s %v %v°C %d%% %.1f mmHg %.1f m/s %s\n",
+			userMessage += fmt.Sprintf("%s %s %+d %d%% %.1f %.1f %s\n",
 				hours,
 				utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
 				int(entry.Main.Temp),
