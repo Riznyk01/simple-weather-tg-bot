@@ -26,7 +26,7 @@ func sendMessageWithInlineKeyboard(bot *tgbotapi.BotAPI, chatID int64, text stri
 // sends inline keyboard when requests for weather type is reported after the location is sent
 func sendLocationOptions(bot *tgbotapi.BotAPI, chatID int64, latStr, lonStr string) error {
 	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, types.ChooseOptionMessage)
-	err := sendMessageWithInlineKeyboard(bot, chatID, chooseWeatherType, types.CommandForecastLocation, types.CommandCurrentLocation)
+	err := sendMessageWithInlineKeyboard(bot, chatID, chooseWeatherType, types.CommandCurrentLocation, types.CommandForecastLocation)
 	if err != nil {
 		return err
 	}

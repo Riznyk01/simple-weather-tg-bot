@@ -72,7 +72,6 @@ func main() {
 							userMessage = e.Wrap("", err).Error()
 						}
 						sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
-						city = ""
 					} else {
 						sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.MissingCityMessage)
 					}

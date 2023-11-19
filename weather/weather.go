@@ -45,7 +45,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 		if err != nil {
 			return "", e.Wrap("", err)
 		}
-		userMessage = fmt.Sprintf("%s %s \n %s 🌡 %.0f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
+		userMessage = fmt.Sprintf("<b>%s %s</b> \n\n %s 🌡 %.0f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
 			weatherData.Sys.Country,
 			weatherData.Name,
 			utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
@@ -61,7 +61,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 			utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
 		cityId := strconv.Itoa(weatherData.ID)
-		userMessage += "\n\n" + "More information on the web link:" + "\n" + "https://openweathermap.org/city/" + cityId
+		userMessage += "\n\nMore: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
 
 	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
@@ -108,7 +108,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 
 		}
 		cityId := strconv.Itoa(forecastData.City.ID)
-		userMessage += "\n\n" + "More information on the web link:" + "\n" + "https://openweathermap.org/city/" + cityId
+		userMessage += "More: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
 	}
 	return userMessage, nil
 }
