@@ -45,23 +45,23 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 		if err != nil {
 			return "", e.Wrap("", err)
 		}
-		userMessage = fmt.Sprintf("<b>%s %s</b> \n\n %s 🌡 %.0f°C 💧 %d%%\n\nFeel %.0f°C  📉 %.0f°C ️ 📈 %.0f°C \n %.2f mmHg %s %.2f m/s \n\n🌅  %s 🌉  %s",
+		userMessage = fmt.Sprintf("<b>%s %s</b> %s 🌡 %.0f°C (Feel %.0f°C) 💧 %d%%  \n\n 📉 %.0f°C ️ 📈 %.0f°C %.2f mmHg %.2f m/s %s \n\n🌅  %s 🌉  %s",
 			weatherData.Sys.Country,
 			weatherData.Name,
 			utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
 			weatherData.Main.Temp,
-			weatherData.Main.Humidity,
 			weatherData.Main.FeelsLike,
+			weatherData.Main.Humidity,
 			weatherData.Main.TempMin,
 			weatherData.Main.TempMax,
 			utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
-			utils.DegreesToDirectionIcon(weatherData.Wind.Deg),
 			weatherData.Wind.Speed,
+			utils.DegreesToDirectionIcon(weatherData.Wind.Deg),
 			utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
 			utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
 		cityId := strconv.Itoa(weatherData.ID)
-		userMessage += "\n\nMore: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
+		userMessage += " More: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
 
 	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
@@ -73,6 +73,14 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 		// Constructing the date display, including day, month, and day of the week,
 		// to be inserted into the user message about the weather.
 		userMessage += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
+		messageHeader := fmt.Sprintf("[%s] [%s] [%s] [%s] [%s]\n",
+			"h:m",
+			"°C",
+			"%",
+			"mmHg",
+			"m/s",
+		)
+		userMessage += messageHeader
 
 		for ind, entry := range forecastData.List {
 			hours := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
@@ -82,18 +90,11 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 				// Constructing the date display, including day, month, and day of the week,
 				// to be inserted into the user message about the weather.
 				userMessage += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", dayNum, utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
-				userMessage += fmt.Sprintf("[%s] %s [%s] [%s] [%s] [%s]\n",
-					"h",
-					"---",
-					"°C",
-					"%",
-					"mmHg",
-					"m/s",
-				)
+				userMessage += messageHeader
 			}
 
 			userMessage += fmt.Sprintf("%s %s %+d %d%% %.1f %.1f %s\n",
-				hours,
+				hours+":00",
 				utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
 				int(entry.Main.Temp),
 				entry.Main.Humidity,
@@ -108,7 +109,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 
 		}
 		cityId := strconv.Itoa(forecastData.City.ID)
-		userMessage += "More: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
+		userMessage += "\nMore: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
 	}
 	return userMessage, nil
 }
