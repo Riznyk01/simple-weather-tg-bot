@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-var city, latStr, lonStr string
+var city, latStr, lonStr, weatherUrl, userMessage string
 
 func main() {
 
@@ -57,40 +57,40 @@ func main() {
 					logger.ForErrorPrint(e.Wrap("", err))
 				}
 			}
-		} else {
-			if update.CallbackQuery != nil {
-				switch {
-				case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
-					if city != "" {
-						weatherUrl, err := weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data)
-						if err != nil {
-							logger.ForErrorPrint(e.Wrap("", err))
-						}
-						userMessage, err := weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
-						if err != nil {
-							logger.ForErrorPrint(e.Wrap("", err))
-							userMessage = e.Wrap("", err).Error()
-						}
-						sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
-					} else {
-						sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.MissingCityMessage)
+		}
+
+		if update.Message == nil && update.CallbackQuery != nil {
+			switch {
+			case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
+				if city != "" {
+					weatherUrl, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data)
+					if err != nil {
+						logger.ForErrorPrint(e.Wrap("", err))
 					}
-				case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
-					var weatherUrl, userMessage string
-					if latStr != "" && lonStr != "" {
-						weatherUrl, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data)
-						if err != nil {
-							logger.ForErrorPrint(e.Wrap("", err))
-						}
-						userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
-						if err != nil {
-							logger.ForErrorPrint(e.Wrap("", err))
-						}
-					} else {
-						userMessage = types.NoLocationProvidedMessage
+					userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+					if err != nil {
+						logger.ForErrorPrint(e.Wrap("", err))
+						userMessage = e.Wrap("", err).Error()
 					}
 					sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+				} else {
+					sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.MissingCityMessage)
 				}
+			case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
+
+				if latStr != "" && lonStr != "" {
+					weatherUrl, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data)
+					if err != nil {
+						logger.ForErrorPrint(e.Wrap("", err))
+					}
+					userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+					if err != nil {
+						logger.ForErrorPrint(e.Wrap("", err))
+					}
+				} else {
+					userMessage = types.NoLocationProvidedMessage
+				}
+				sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
 			}
 		}
 	}
