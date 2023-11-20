@@ -12,7 +12,8 @@ import (
 	"os"
 )
 
-var city, latStr, lonStr, weatherUrl, userMessage string
+var city, latStr, lonStr, weatherUrl, userMessage, tWeather string
+var err error
 
 func main() {
 
@@ -21,7 +22,7 @@ func main() {
 		logger.ForError(err)
 	}
 	t := os.Getenv("BOT_TOKEN")
-	tWeather := os.Getenv("WEATHER_KEY")
+	tWeather = os.Getenv("WEATHER_KEY")
 
 	bot, err := tgbotapi.NewBotAPI(t)
 	if err != nil {
@@ -37,61 +38,66 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-
-		if update.Message != nil {
-			switch {
-			case update.Message.Text == types.CommandStart:
-				sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
-			case update.Message.Text == types.CommandHelp:
-				sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
-			case update.Message.Location != nil:
-				latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-				err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
-				if err != nil {
-					logger.ForErrorPrint(e.Wrap("", err))
-				}
-			default:
-				city = update.Message.Text
-				err = sendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
-				if err != nil {
-					logger.ForErrorPrint(e.Wrap("", err))
-				}
+		switch {
+		case update.Message != nil && update.Message.Location == nil:
+			handleUpdateMessage(bot, update)
+		case update.Message != nil && update.Message.Location != nil:
+			handleLocationMessage(bot, update)
+		case update.Message == nil && update.CallbackQuery != nil:
+			handleCallbackQuery(bot, update)
+		}
+	}
+}
+func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	switch {
+	case update.Message.Text == types.CommandStart:
+		sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
+	case update.Message.Text == types.CommandHelp:
+		sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
+	default:
+		city = update.Message.Text
+		err = sendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+	}
+}
+func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
+	err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
+	if err != nil {
+		logger.ForErrorPrint(e.Wrap("", err))
+	}
+}
+func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	switch {
+	case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
+		if city == "" {
+			userMessage = types.MissingCityMessage
+		} else {
+			weatherUrl, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data)
+			if err != nil {
+				logger.ForErrorPrint(e.Wrap("", err))
+			}
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+			if err != nil {
+				logger.ForErrorPrint(e.Wrap("", err))
+				userMessage = e.Wrap("", err).Error()
 			}
 		}
-
-		if update.Message == nil && update.CallbackQuery != nil {
-			switch {
-			case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
-				if city != "" {
-					weatherUrl, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data)
-					if err != nil {
-						logger.ForErrorPrint(e.Wrap("", err))
-					}
-					userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
-					if err != nil {
-						logger.ForErrorPrint(e.Wrap("", err))
-						userMessage = e.Wrap("", err).Error()
-					}
-					sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
-				} else {
-					sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.MissingCityMessage)
-				}
-			case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
-
-				if latStr != "" && lonStr != "" {
-					weatherUrl, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data)
-					if err != nil {
-						logger.ForErrorPrint(e.Wrap("", err))
-					}
-					userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
-					if err != nil {
-						logger.ForErrorPrint(e.Wrap("", err))
-					}
-				} else {
-					userMessage = types.NoLocationProvidedMessage
-				}
-				sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+	case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
+		if latStr == "" && lonStr == "" {
+			userMessage = types.NoLocationProvidedMessage
+		} else {
+			weatherUrl, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data)
+			if err != nil {
+				logger.ForErrorPrint(e.Wrap("", err))
+			}
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+			if err != nil {
+				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
 	}
+	sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
 }

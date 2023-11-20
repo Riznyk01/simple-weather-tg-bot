@@ -35,7 +35,7 @@ func GetWeather(fullUrlGet, forecastType string) (string, error) {
 			}
 			err = json.Unmarshal(body, &errorResponse)
 			if err == nil {
-				return "", fmt.Errorf("%s. \nTry another city name.", errorResponse.Message)
+				return "", fmt.Errorf("%s. Try another city name.", errorResponse.Message)
 			}
 		}
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
