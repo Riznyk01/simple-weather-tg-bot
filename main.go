@@ -42,11 +42,11 @@ func main() {
 	for update := range updates {
 		switch {
 		case update.Message != nil && update.Message.Location == nil:
-			handleUpdateMessage(bot, update)
+			go handleUpdateMessage(bot, update)
 		case update.Message != nil && update.Message.Location != nil:
-			handleLocationMessage(bot, update)
+			go handleLocationMessage(bot, update)
 		case update.Message == nil && update.CallbackQuery != nil:
-			handleCallbackQuery(bot, update)
+			go handleCallbackQuery(bot, update)
 		}
 	}
 }
