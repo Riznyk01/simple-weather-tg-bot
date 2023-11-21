@@ -33,18 +33,18 @@ Get your free OpenWeatherMap API Key [here](https://home.openweathermap.org/api_
 Clone the repository:
 
 ```bash
-git clone https://github.com/Riznyk01/SimpleWeatherTgBot.git
-cd SimpleWeatherTgBot
+git clone https://github.com/Riznyk01/simple-weather-tg-bot.git
+cd simple-weather-tg-bot
 ```
 
 Build the Docker image:
 ```bash
-sudo docker build -t simpleweathertgbot .
+sudo docker build -t simple-weather-tg-bot .
 ```
 ## Usage
 Run the Docker container:
 ```bash
-sudo docker run -d simpleweathertgbot
+sudo docker run -d simple-weather-tg-bot
 ```
 
 Check the running containers:
@@ -53,8 +53,10 @@ Check the running containers:
 sudo docker ps
 ```
 ## Bot Commands
-/start: Sends a welcome message and instructions to the user.
-/help: Provides information on how to use the bot.
+/start: sends a welcome message and instructions to the user.  
+/help: provides information on how to use the bot.  
+/metric: set metric units  
+/nonmetric: set non-metric units  
 
 ## Pricing Information
 Information about pricing, available plans, and limitations of the free API package can be found [here](https://openweathermap.org/price).
