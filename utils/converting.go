@@ -4,10 +4,12 @@ import (
 	"time"
 )
 
-func HPaToMmHg(hPa float64) float64 {
-	return hPa * 0.750061561303
-}
-func HPaToIn(hPa float64) float64 {
+func PressureConverting(hPa float64, metric bool) float64 {
+	if metric {
+		//HPaToMmHg
+		return hPa * 0.750061561303
+	}
+	//HPaToInHg
 	return hPa * 0.0295299830714
 }
 func TimeStampToHuman(timeStamp, timezone int, format string) string {

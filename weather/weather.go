@@ -78,14 +78,13 @@ func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
 
 // Returns a message with current weather and city id (in string).
 func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) (userMessageCurrent, cityIdStr string) {
-	pressure := utils.HPaToMmHg(float64(weatherData.Main.Pressure))
+	pressure := utils.PressureConverting(float64(weatherData.Main.Pressure), metric)
 	windSpeed := weatherData.Wind.Speed
 	//Converting to miles per hour if non-metric
 	if !metric {
 		windSpeed = utils.ToMilesPerHour(weatherData.Wind.Speed)
-		pressure = utils.HPaToIn(float64(weatherData.Main.Pressure))
+		pressure = utils.PressureConverting(float64(weatherData.Main.Pressure), metric)
 	}
-
 	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %.0f%s (Feel %.0f%s) 💧 %d%%  \n\n 📉 %.0f%s ️ 📈 %.0f%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
@@ -138,9 +137,11 @@ func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool)
 			userMessageForecast += messageHeader
 		}
 
+		pressure := utils.PressureConverting(float64(entry.Main.Pressure), metric)
 		windSpeedForecast := entry.Wind.Speed
 		// Converting to miles per hour if non-metric
 		if !metric {
+			pressure = utils.PressureConverting(float64(entry.Main.Pressure), metric)
 			windSpeedForecast = utils.ToMilesPerHour(entry.Wind.Speed)
 		}
 
@@ -149,7 +150,7 @@ func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool)
 			utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
 			int(entry.Main.Temp),
 			entry.Main.Humidity,
-			utils.HPaToMmHg(float64(entry.Main.Pressure)),
+			pressure,
 			windSpeedForecast,
 			utils.DegreesToDirectionIcon(entry.Wind.Deg),
 		)
