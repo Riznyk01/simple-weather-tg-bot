@@ -28,7 +28,9 @@ func TimeStampToInfo(timeStamp, timezone int, infoType string) string {
 		return "Invalid info type"
 	}
 }
-
+func ToMilesPerHour(metersPerSecond float64) float64 {
+	return metersPerSecond * 2.23694
+}
 func DegreesToDirectionIcon(degrees float64) string {
 	if degrees >= 337.5 || degrees < 22.5 {
 		return "⬆️"

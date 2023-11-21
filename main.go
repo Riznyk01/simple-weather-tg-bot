@@ -14,6 +14,8 @@ import (
 
 var city, latStr, lonStr, weatherUrl, userMessage, tWeather string
 var err error
+var userUnits = make(map[int64]bool)
+var units bool
 
 func main() {
 
@@ -50,6 +52,12 @@ func main() {
 }
 func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
+	case update.Message.Text == types.CommandMetricUnits:
+		setUserUnitsToMetric(update.Message.Chat.ID, true)
+		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOn)
+	case update.Message.Text == types.CommandNonMetricUnits:
+		setUserUnitsToMetric(update.Message.Chat.ID, false)
+		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
 	case update.Message.Text == types.CommandStart:
 		sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
 	case update.Message.Text == types.CommandHelp:
@@ -75,11 +83,11 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if city == "" {
 			userMessage = types.MissingCityMessage
 		} else {
-			weatherUrl, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data)
+			weatherUrl, units, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data, getUserUnitsToMetric(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, units)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 				userMessage = e.Wrap("", err).Error()
@@ -89,15 +97,22 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if latStr == "" && lonStr == "" {
 			userMessage = types.NoLocationProvidedMessage
 		} else {
-			weatherUrl, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data)
+			weatherUrl, units, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data, getUserUnitsToMetric(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, units)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
 	}
 	sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+}
+
+func setUserUnitsToMetric(chatID int64, metric bool) {
+	userUnits[chatID] = metric
+}
+func getUserUnitsToMetric(chatID int64) bool {
+	return userUnits[chatID]
 }

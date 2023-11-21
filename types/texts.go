@@ -8,6 +8,8 @@ const (
 	CommandForecast         = "5-days forecast"
 	CommandForecastLocation = "5-days forecast 📍"
 	CommandCurrentLocation  = "current 📍"
+	CommandMetricUnits      = "/metric"
+	CommandNonMetricUnits   = "/nonmetric"
 )
 
 // Constants for messages
@@ -17,4 +19,6 @@ const (
 	MissingCityMessage        = "You didn't enter a city.\nPlease enter a city or send your location,\nand then choose the type of weather."
 	ChooseOptionMessage       = "Choose an action:"
 	NoLocationProvidedMessage = "You tried to get the weather based on your location, but you didn't share your location."
+	MetrikUnitOn              = "Metric units are enabled."
+	MetrikUnitOff             = "Metric units are disabled."
 )
