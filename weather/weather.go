@@ -13,9 +13,10 @@ import (
 
 var weatherData types.WeatherResponse
 var forecastData types.WeatherResponse5d3h
-var userMessage, temperatureUnits, windUnits, weatherMessage string
+var temperatureUnits, windUnits, pressureUnits string
 
-func GetWeather(fullUrlGet, forecastType string, metric bool) (string, error) {
+// Returns a complete weather message.
+func GetWeather(fullUrlGet, forecastType string, metric bool) (weatherMessage string, err error) {
 	resp, err := http.Get(fullUrlGet)
 	if err != nil {
 		return "", err
@@ -26,6 +27,8 @@ func GetWeather(fullUrlGet, forecastType string, metric bool) (string, error) {
 		errorMessage := err.Error()
 		return "", fmt.Errorf("error: %s", errorMessage)
 	}
+
+	var cityIdString string
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
@@ -41,43 +44,49 @@ func GetWeather(fullUrlGet, forecastType string, metric bool) (string, error) {
 		return "", fmt.Errorf("Failed to get weather data. Status code: %d", resp.StatusCode)
 	}
 	//Getting units of measurement
-	temperatureUnits, windUnits = units(metric)
-
+	temperatureUnits, windUnits, pressureUnits = units(metric)
 	if forecastType == "current" || forecastType == "current 📍" {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
 			return "", e.Wrap("", err)
 		}
-		weatherMessage = messageCurrentWeather(weatherData, metric)
+		weatherMessage, cityIdString = messageCurrentWeather(weatherData, metric)
 	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
 			return "", e.Wrap("", err)
 		}
-		weatherMessage = messageForecastWeather(forecastData, metric)
+		weatherMessage, cityIdString = messageForecastWeather(forecastData, metric)
 	}
-	return weatherMessage, nil
+	more := fmt.Sprintf("\nMore: <a href=\"https://openweathermap.org/city/, %s \">OpenWeatherMap</a>", cityIdString)
+	return weatherMessage + more, nil
 }
 
-// Returns the units depending on whether the system is metric or not
-func units(metricUnits bool) (tempUnits, windUnits string) {
+// Returns units based on the metric system.
+func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
 	if metricUnits {
 		tempUnits = " °C"
 		windUnits = " m/s"
+		pressureUnits = " mmHg"
 	} else {
 		tempUnits = " °F"
 		windUnits = " mph"
+		pressureUnits = " inHg"
 	}
-	return tempUnits, windUnits
+	return tempUnits, windUnits, pressureUnits
 }
-func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) string {
-	//Convetring to miles per hour if non metric
+
+// Returns a message with current weather and city id (in string).
+func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) (userMessageCurrent, cityIdStr string) {
+	pressure := utils.HPaToMmHg(float64(weatherData.Main.Pressure))
 	windSpeed := weatherData.Wind.Speed
+	//Converting to miles per hour if non-metric
 	if !metric {
 		windSpeed = utils.ToMilesPerHour(weatherData.Wind.Speed)
+		pressure = utils.HPaToIn(float64(weatherData.Main.Pressure))
 	}
 
-	userMessageCurrent := fmt.Sprintf("<b>%s %s</b> %s 🌡 %.0f%s (Feel %.0f%s) 💧 %d%%  \n\n 📉 %.0f%s ️ 📈 %.0f%s %.2f mmHg %.2f%s %s \n\n🌅  %s 🌉  %s",
+	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %.0f%s (Feel %.0f%s) 💧 %d%%  \n\n 📉 %.0f%s ️ 📈 %.0f%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
 		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
@@ -90,29 +99,29 @@ func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) strin
 		temperatureUnits,
 		weatherData.Main.TempMax,
 		temperatureUnits,
-		utils.HPaToMmHg(float64(weatherData.Main.Pressure)),
+		pressure,
+		pressureUnits,
 		windSpeed,
 		windUnits,
 		utils.DegreesToDirectionIcon(weatherData.Wind.Deg),
 		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
 		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
 
-	cityId := strconv.Itoa(weatherData.ID)
-	userMessageCurrent += " More: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
-
-	return userMessageCurrent
+	return userMessageCurrent, strconv.Itoa(weatherData.ID)
 }
-func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool) string {
+
+// Returns a message with weather forecast and city id (in string).
+func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool) (userMessageForecast, cityIdStr string) {
 	// Creating a string to display the country and city names
-	userMessageForecast := fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
+	userMessageForecast = fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
 	// Constructing the date display, including day, month, and day of the week,
 	// to be inserted into the user message about the weather.
 	userMessageForecast += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
-	messageHeader := fmt.Sprintf("[%s] [%s] [%s] [%s] [%s]\n",
+	messageHeader := fmt.Sprintf("[%s] [---] [%s] [%s] [%s] [%s]\n",
 		"h:m",
 		temperatureUnits,
 		"%",
-		"mmHg",
+		pressureUnits,
 		windUnits,
 	)
 
@@ -130,7 +139,7 @@ func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool)
 		}
 
 		windSpeedForecast := entry.Wind.Speed
-		//Convetring to miles per hour if non metric
+		// Converting to miles per hour if non-metric
 		if !metric {
 			windSpeedForecast = utils.ToMilesPerHour(entry.Wind.Speed)
 		}
@@ -150,7 +159,5 @@ func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool)
 		}
 
 	}
-	cityId := strconv.Itoa(forecastData.City.ID)
-	userMessageForecast += "\nMore: " + "<a href=\"https://openweathermap.org/city/" + cityId + "\">OpenWeatherMap</a>"
-	return userMessageForecast
+	return userMessageForecast, strconv.Itoa(forecastData.City.ID)
 }

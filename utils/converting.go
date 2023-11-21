@@ -7,11 +7,12 @@ import (
 func HPaToMmHg(hPa float64) float64 {
 	return hPa * 0.750061561303
 }
-
+func HPaToIn(hPa float64) float64 {
+	return hPa * 0.0295299830714
+}
 func TimeStampToHuman(timeStamp, timezone int, format string) string {
 	location := time.FixedZone("Custom Timezone", timezone)
 	timeValue := time.Unix(int64(timeStamp), 0).In(location)
-	//return timeValue.Format("2006-01-02 15:04:05 -0700")
 	return timeValue.Format(format)
 }
 
