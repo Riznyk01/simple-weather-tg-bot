@@ -9,7 +9,7 @@ const (
 	apiWeatherUrl = "https://api.openweathermap.org/data/2.5/"
 )
 
-func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, bool, error) {
+func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 	if forecastType == "current" {
 		weatherUrl = apiWeatherUrl + "weather?"
@@ -19,7 +19,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (st
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		return "", false, e.Wrap("", err)
+		return "", e.Wrap("", err)
 	}
 
 	q := url.Values{}
@@ -30,10 +30,10 @@ func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (st
 	}
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-	return fullUrlGet, metricUnits, nil
+	return fullUrlGet, nil
 }
 
-func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricUnits bool) (string, bool, error) {
+func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 
 	if forecastType == "current 📍" {
@@ -44,7 +44,7 @@ func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricU
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		return "", false, e.Wrap("", err)
+		return "", e.Wrap("", err)
 	}
 
 	q := url.Values{}
@@ -56,5 +56,5 @@ func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricU
 	}
 	u.RawQuery = q.Encode()
 	fullUrlGet := u.String()
-	return fullUrlGet, metricUnits, nil
+	return fullUrlGet, nil
 }

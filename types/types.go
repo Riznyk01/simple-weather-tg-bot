@@ -97,3 +97,10 @@ type WeatherResponse5d3h struct {
 		Sunset     int    `json:"sunset"`
 	} `json:"city"`
 }
+
+type UserData struct {
+	City   string
+	Lat    string
+	Lon    string
+	Metric bool
+}

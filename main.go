@@ -12,10 +12,9 @@ import (
 	"os"
 )
 
-var city, latStr, lonStr, weatherUrl, userMessage, tWeather string
+var weatherUrl, userMessage, tWeather string
 var err error
-var userUnits = make(map[int64]bool)
-var units bool
+var userData = make(map[int64]types.UserData)
 
 func main() {
 
@@ -53,17 +52,23 @@ func main() {
 func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.Message.Text == types.CommandMetricUnits:
-		setUserUnitsToMetric(update.Message.Chat.ID, true)
+		currentData := userData[update.Message.Chat.ID]
+		currentData.Metric = true
+		userData[update.Message.Chat.ID] = currentData
 		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOn)
 	case update.Message.Text == types.CommandNonMetricUnits:
-		setUserUnitsToMetric(update.Message.Chat.ID, false)
+		currentData := userData[update.Message.Chat.ID]
+		currentData.Metric = false
+		userData[update.Message.Chat.ID] = currentData
 		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
 	case update.Message.Text == types.CommandStart:
 		sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
 	case update.Message.Text == types.CommandHelp:
 		sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
 	default:
-		city = update.Message.Text
+		currentData := userData[update.Message.Chat.ID]
+		currentData.City = update.Message.Text
+		userData[update.Message.Chat.ID] = currentData
 		err = sendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
@@ -71,8 +76,11 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 }
 func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	latStr, lonStr = fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-	err = sendLocationOptions(bot, update.Message.Chat.ID, latStr, lonStr)
+	currentData := userData[update.Message.Chat.ID]
+	currentData.Lat = fmt.Sprintf("%f", update.Message.Location.Latitude)
+	currentData.Lon = fmt.Sprintf("%f", update.Message.Location.Longitude)
+	userData[update.Message.Chat.ID] = currentData
+	err = sendLocationOptions(bot, update.Message.Chat.ID, userData[update.Message.Chat.ID].Lat, userData[update.Message.Chat.ID].Lon)
 	if err != nil {
 		logger.ForErrorPrint(e.Wrap("", err))
 	}
@@ -80,39 +88,32 @@ func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
-		if city == "" {
+		if userData[update.CallbackQuery.Message.Chat.ID].City == "" {
 			userMessage = types.MissingCityMessage
 		} else {
-			weatherUrl, units, err = weather.WeatherUrlByCity(city, tWeather, update.CallbackQuery.Data, getUserUnitsToMetric(update.CallbackQuery.Message.Chat.ID))
+			weatherUrl, err = weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, units)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 				userMessage = e.Wrap("", err).Error()
 			}
 		}
 	case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
-		if latStr == "" && lonStr == "" {
+		if userData[update.CallbackQuery.Message.Chat.ID].Lat == "" && userData[update.CallbackQuery.Message.Chat.ID].Lon == "" {
 			userMessage = types.NoLocationProvidedMessage
 		} else {
-			weatherUrl, units, err = weather.WeatherUrlByLocation(latStr, lonStr, tWeather, update.CallbackQuery.Data, getUserUnitsToMetric(update.CallbackQuery.Message.Chat.ID))
+			weatherUrl, err = weather.WeatherUrlByLocation(userData[update.CallbackQuery.Message.Chat.ID].Lat, userData[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, units)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
 	}
 	sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
-}
-
-func setUserUnitsToMetric(chatID int64, metric bool) {
-	userUnits[chatID] = metric
-}
-func getUserUnitsToMetric(chatID int64) bool {
-	return userUnits[chatID]
 }
