@@ -4,6 +4,7 @@ package types
 const (
 	CommandStart            = "/start"
 	CommandHelp             = "/help"
+	CommandLast             = "repeat last"
 	CommandCurrent          = "current"
 	CommandForecast         = "5-days forecast"
 	CommandForecastLocation = "5-days forecast 📍"
@@ -21,4 +22,7 @@ const (
 	NoLocationProvidedMessage = "You tried to get the weather based on your location, but you didn't share your location."
 	MetrikUnitOn              = "Metric units are enabled."
 	MetrikUnitOff             = "Metric units are disabled."
+	LastDataUnavailable       = "Sorry ❤️," +
+		"you requested a forecast with the latest parameters, but the bot underwent a restart, and they are not available. <b>" +
+		"\n\nPlease try sending the city name or location, and then select the weather type using the buttons.</b>"
 )

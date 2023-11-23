@@ -18,7 +18,7 @@ func sendMessageWithInlineKeyboard(bot *tgbotapi.BotAPI, chatID int64, text stri
 	}
 	inlineKeyboard := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(inlineButtons...))
 	msg.ReplyMarkup = inlineKeyboard
-
+	msg.ParseMode = "HTML"
 	_, err := bot.Send(msg)
 	return err
 }

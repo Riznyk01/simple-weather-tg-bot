@@ -103,4 +103,5 @@ type UserData struct {
 	Lat    string
 	Lon    string
 	Metric bool
+	Last   string
 }

@@ -12,9 +12,11 @@ import (
 	"os"
 )
 
-var weatherUrl, userMessage, tWeather string
-var err error
-var userData = make(map[int64]types.UserData)
+var (
+	userMessage, tWeather string
+	err                   error
+	userData              = make(map[int64]types.UserData)
+)
 
 func main() {
 
@@ -45,7 +47,12 @@ func main() {
 		case update.Message != nil && update.Message.Location != nil:
 			go handleLocationMessage(bot, update)
 		case update.Message == nil && update.CallbackQuery != nil:
-			go handleCallbackQuery(bot, update)
+			if update.CallbackQuery.Data != types.CommandLast {
+				go handleCallbackQuery(bot, update)
+			} else {
+				go handleLast(bot, update)
+			}
+
 		}
 	}
 }
@@ -91,10 +98,14 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if userData[update.CallbackQuery.Message.Chat.ID].City == "" {
 			userMessage = types.MissingCityMessage
 		} else {
-			weatherUrl, err = weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+			currentData := userData[update.CallbackQuery.Message.Chat.ID]
+			weatherUrl, err := weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
+			currentData.Last = update.CallbackQuery.Data
+			userData[update.CallbackQuery.Message.Chat.ID] = currentData
+
 			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
@@ -105,15 +116,56 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if userData[update.CallbackQuery.Message.Chat.ID].Lat == "" && userData[update.CallbackQuery.Message.Chat.ID].Lon == "" {
 			userMessage = types.NoLocationProvidedMessage
 		} else {
-			weatherUrl, err = weather.WeatherUrlByLocation(userData[update.CallbackQuery.Message.Chat.ID].Lat, userData[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+			currentData := userData[update.CallbackQuery.Message.Chat.ID]
+
+			weatherUrl, err := weather.WeatherUrlByLocation(userData[update.CallbackQuery.Message.Chat.ID].Lat, userData[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
+
+			currentData.Last = update.CallbackQuery.Data
+			userData[update.CallbackQuery.Message.Chat.ID] = currentData
 			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
 	}
-	sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+	err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+	if err != nil {
+		logger.ForErrorPrint(e.Wrap("", err))
+	}
+}
+func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	switch {
+	case userData[update.CallbackQuery.Message.Chat.ID].Last == "":
+		sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable)
+	case userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrent || userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecast:
+		weatherUrl, err := weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+		userMessage, err = weather.GetWeather(weatherUrl, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+			userMessage = e.Wrap("", err).Error()
+		}
+		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+	case userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecastLocation || userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrentLocation:
+		weatherUrl, err := weather.WeatherUrlByLocation(userData[update.CallbackQuery.Message.Chat.ID].Lat, userData[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+		userMessage, err = weather.GetWeather(weatherUrl, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
+	}
 }
