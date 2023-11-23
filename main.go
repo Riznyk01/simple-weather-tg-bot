@@ -56,6 +56,8 @@ func main() {
 		}
 	}
 }
+
+// Processes text messages and commands from users.
 func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.Message.Text == types.CommandMetricUnits:
@@ -82,6 +84,8 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 	}
 }
+
+// Processes location messages from users.
 func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	currentData := userData[update.Message.Chat.ID]
 	currentData.Lat = fmt.Sprintf("%f", update.Message.Location.Latitude)
@@ -92,6 +96,8 @@ func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		logger.ForErrorPrint(e.Wrap("", err))
 	}
 }
+
+// Processes callback queries from users.
 func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
@@ -110,6 +116,12 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 				userMessage = e.Wrap("", err).Error()
+				sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+			} else {
+				err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+				if err != nil {
+					logger.ForErrorPrint(e.Wrap("", err))
+				}
 			}
 		}
 	case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
@@ -130,12 +142,14 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
-	}
-	err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
-	if err != nil {
-		logger.ForErrorPrint(e.Wrap("", err))
+		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		if err != nil {
+			logger.ForErrorPrint(e.Wrap("", err))
+		}
 	}
 }
+
+// Processes the "repeat last" callback query, sends the last weather data.
 func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case userData[update.CallbackQuery.Message.Chat.ID].Last == "":
