@@ -58,7 +58,7 @@ func GetWeather(fullUrlGet, forecastType string, metric bool) (weatherMessage st
 		}
 		weatherMessage, cityIdString = messageForecastWeather(forecastData, metric)
 	}
-	more := fmt.Sprintf("\nMore: <a href=\"https://openweathermap.org/city/%s\">OpenWeatherMap</a>", cityIdString)
+	more := fmt.Sprintf("\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>", cityIdString)
 	return weatherMessage + more, nil
 }
 

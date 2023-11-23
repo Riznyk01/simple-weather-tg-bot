@@ -71,7 +71,9 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		userData[update.Message.Chat.ID] = currentData
 		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
 	case update.Message.Text == types.CommandStart:
-		sendMessage(bot, update.Message.Chat.ID, types.WelcomeMessage+types.HelpMessage)
+		n := update.SentFrom()
+		greet := fmt.Sprintf("%s%s%s%s", types.WelcomeMessage, n.FirstName, types.WelcomeMessageEnd, types.HelpMessage)
+		sendMessage(bot, update.Message.Chat.ID, greet)
 	case update.Message.Text == types.CommandHelp:
 		sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
 	default:
@@ -152,8 +154,10 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 // Processes the "repeat last" callback query, sends the last weather data.
 func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
+	// If the user's last requested weather type is empty due to a bot restart.
 	case userData[update.CallbackQuery.Message.Chat.ID].Last == "":
-		sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable)
+		name := update.SentFrom()
+		sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
 	case userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrent || userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecast:
 		weatherUrl, err := weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 		if err != nil {
