@@ -85,18 +85,18 @@ func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) (user
 		windSpeed = utils.ToMilesPerHour(weatherData.Wind.Speed)
 		pressure = utils.PressureConverting(float64(weatherData.Main.Pressure), metric)
 	}
-	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %.0f%s (Feel %.0f%s) 💧 %d%%  \n\n 📉 %.0f%s ️ 📈 %.0f%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
+	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
 		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
-		weatherData.Main.Temp,
+		utils.TemperatureConverting(weatherData.Main.Temp, metric),
 		temperatureUnits,
-		weatherData.Main.FeelsLike,
+		utils.TemperatureConverting(weatherData.Main.FeelsLike, metric),
 		temperatureUnits,
 		weatherData.Main.Humidity,
-		weatherData.Main.TempMin,
+		utils.TemperatureConverting(weatherData.Main.TempMin, metric),
 		temperatureUnits,
-		weatherData.Main.TempMax,
+		utils.TemperatureConverting(weatherData.Main.TempMax, metric),
 		temperatureUnits,
 		pressure,
 		pressureUnits,
@@ -137,20 +137,18 @@ func messageForecastWeather(forecastData types.WeatherResponse5d3h, metric bool)
 			userMessageForecast += messageHeader
 		}
 
-		pressure := utils.PressureConverting(float64(entry.Main.Pressure), metric)
 		windSpeedForecast := entry.Wind.Speed
 		// Converting to miles per hour if non-metric
 		if !metric {
-			pressure = utils.PressureConverting(float64(entry.Main.Pressure), metric)
 			windSpeedForecast = utils.ToMilesPerHour(entry.Wind.Speed)
 		}
 
 		userMessageForecast += fmt.Sprintf("%s %s %+d %d%% %.1f %.1f %s\n",
 			hours+":00",
 			utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
-			int(entry.Main.Temp),
+			utils.TemperatureConverting(entry.Main.Temp, metric),
 			entry.Main.Humidity,
-			pressure,
+			utils.PressureConverting(float64(entry.Main.Pressure), metric),
 			windSpeedForecast,
 			utils.DegreesToDirectionIcon(entry.Wind.Deg),
 		)

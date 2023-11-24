@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math"
 	"time"
 )
 
@@ -17,7 +18,12 @@ func TimeStampToHuman(timeStamp, timezone int, format string) string {
 	timeValue := time.Unix(int64(timeStamp), 0).In(location)
 	return timeValue.Format(format)
 }
-
+func TemperatureConverting(temp float64, metric bool) int16 {
+	if metric {
+		return int16(math.Round(temp))
+	}
+	return int16(math.Round((temp-273.15)*(9/5) + 32))
+}
 func TimeStampToInfo(timeStamp, timezone int, infoType string) string {
 	location := time.FixedZone("Custom Timezone", timezone)
 	timeValue := time.Unix(int64(timeStamp), 0).In(location)
