@@ -10,19 +10,19 @@ Simple weather tg bot is a Telegram bot written in Golang that provides weather 
 - [Bot Commands](#bot-commands)
 - [Pricing Information](#pricing-information)
 - [Note](#note)
-- [Screenshots](#screenshots)
+- [Screenshots](#Screenshots)
 
-## screenshots
+## Screenshots
 
 Here are some screenshots of the bot in action:
 
 *City name current weather search:*  
 ![Screenshot 1](images/screenshot_current.png)
 
-*City name 5-days forecast search:*    
+*City name 5-days forecast search:*  
 ![Screenshot 2](images/screenshot_5day_forecast.png)
 
-*Weather retrieval based on location:*    
+*Weather retrieval based on location:*  
 ![Screenshot 3](images/screenshot_location.png)
 
 ## Environment Variables

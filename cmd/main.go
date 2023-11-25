@@ -3,6 +3,7 @@ package main
 import (
 	"SimpleWeatherTgBot/lib/e"
 	"SimpleWeatherTgBot/logger"
+	"SimpleWeatherTgBot/telegram"
 	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/weather"
 	"fmt"
@@ -64,23 +65,23 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		currentData := userData[update.Message.Chat.ID]
 		currentData.Metric = true
 		userData[update.Message.Chat.ID] = currentData
-		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOn)
+		telegram.SendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOn)
 	case update.Message.Text == types.CommandNonMetricUnits:
 		currentData := userData[update.Message.Chat.ID]
 		currentData.Metric = false
 		userData[update.Message.Chat.ID] = currentData
-		sendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
+		telegram.SendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
 	case update.Message.Text == types.CommandStart:
 		n := update.SentFrom()
 		greet := fmt.Sprintf("%s%s%s%s", types.WelcomeMessage, n.FirstName, types.WelcomeMessageEnd, types.HelpMessage)
-		sendMessage(bot, update.Message.Chat.ID, greet)
+		telegram.SendMessage(bot, update.Message.Chat.ID, greet)
 	case update.Message.Text == types.CommandHelp:
-		sendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
+		telegram.SendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
 	default:
 		currentData := userData[update.Message.Chat.ID]
 		currentData.City = update.Message.Text
 		userData[update.Message.Chat.ID] = currentData
-		err = sendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
+		err = telegram.SendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
@@ -93,7 +94,7 @@ func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	currentData.Lat = fmt.Sprintf("%f", update.Message.Location.Latitude)
 	currentData.Lon = fmt.Sprintf("%f", update.Message.Location.Longitude)
 	userData[update.Message.Chat.ID] = currentData
-	err = sendLocationOptions(bot, update.Message.Chat.ID, userData[update.Message.Chat.ID].Lat, userData[update.Message.Chat.ID].Lon)
+	err = telegram.SendLocationOptions(bot, update.Message.Chat.ID, userData[update.Message.Chat.ID].Lat, userData[update.Message.Chat.ID].Lon)
 	if err != nil {
 		logger.ForErrorPrint(e.Wrap("", err))
 	}
@@ -118,9 +119,9 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 				userMessage = e.Wrap("", err).Error()
-				sendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
+				telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
 			} else {
-				err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+				err = telegram.SendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
 				if err != nil {
 					logger.ForErrorPrint(e.Wrap("", err))
 				}
@@ -144,7 +145,7 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
 		}
-		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		err = telegram.SendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
@@ -157,7 +158,7 @@ func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	// If the user's last requested weather type is empty due to a bot restart.
 	case userData[update.CallbackQuery.Message.Chat.ID].Last == "":
 		name := update.SentFrom()
-		sendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
+		telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
 	case userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrent || userData[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecast:
 		weatherUrl, err := weather.WeatherUrlByCity(userData[update.CallbackQuery.Message.Chat.ID].City, tWeather, userData[update.CallbackQuery.Message.Chat.ID].Last, userData[update.CallbackQuery.Message.Chat.ID].Metric)
 		if err != nil {
@@ -168,7 +169,7 @@ func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			logger.ForErrorPrint(e.Wrap("", err))
 			userMessage = e.Wrap("", err).Error()
 		}
-		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		err = telegram.SendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
@@ -181,7 +182,7 @@ func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
-		err = sendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
+		err = telegram.SendMessageWithInlineKeyboard(bot, update.CallbackQuery.Message.Chat.ID, userMessage, types.CommandLast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
