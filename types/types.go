@@ -105,3 +105,32 @@ type UserData struct {
 	Metric bool
 	Last   string
 }
+
+type Users struct {
+	Data map[int64]UserData
+}
+
+func (u *Users) SetSystem(id int64, system bool) {
+	currentData := u.Data[id]
+	currentData.Metric = system
+	u.Data[id] = currentData
+}
+
+func (u *Users) SetCity(id int64, city string) {
+	currentData := u.Data[id]
+	currentData.City = city
+	u.Data[id] = currentData
+}
+
+func (u *Users) SetLocation(id int64, lat, lon string) {
+	currentData := u.Data[id]
+	currentData.Lat = lat
+	currentData.Lon = lon
+	u.Data[id] = currentData
+}
+
+func (u *Users) SetLast(id int64, last string) {
+	currentData := u.Data[id]
+	currentData.Last = last
+	u.Data[id] = currentData
+}
