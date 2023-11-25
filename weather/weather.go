@@ -88,7 +88,7 @@ func messageCurrentWeather(weatherData types.WeatherResponse, metric bool) (user
 	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
 		weatherData.Sys.Country,
 		weatherData.Name,
-		utils.ReplaceWeatherToIcons(weatherData.Weather[0].Description),
+		utils.ReplaceWeatherPlusIcons(weatherData.Weather[0].Description),
 		utils.TemperatureConverting(weatherData.Main.Temp, metric),
 		temperatureUnits,
 		utils.TemperatureConverting(weatherData.Main.FeelsLike, metric),
