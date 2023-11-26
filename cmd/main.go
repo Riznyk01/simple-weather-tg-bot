@@ -3,6 +3,7 @@ package main
 import (
 	"SimpleWeatherTgBot/lib/e"
 	"SimpleWeatherTgBot/logger"
+	"SimpleWeatherTgBot/storage"
 	"SimpleWeatherTgBot/telegram"
 	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/weather"
@@ -16,7 +17,7 @@ import (
 var (
 	userMessage, tWeather string
 	err                   error
-	s                     types.Storage
+	s                     storage.Storage
 )
 
 func main() {
@@ -41,7 +42,7 @@ func main() {
 
 	updates := bot.GetUpdatesChan(u)
 
-	s = types.NewMemoryStorage()
+	s = storage.NewMemoryStorage()
 
 	for update := range updates {
 		switch {
@@ -145,7 +146,7 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 // Processes the "repeat last" callback query, sends the last weather data.
 func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
-	// If the users's last requested weather type is empty due to a bot restart.
+	// If the users last requested weather type is empty due to a bot restart.
 	case !s.Exists(update.CallbackQuery.Message.Chat.ID):
 		name := update.SentFrom()
 		telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
