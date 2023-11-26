@@ -16,7 +16,7 @@ import (
 var (
 	userMessage, tWeather string
 	err                   error
-	storage               types.Users
+	s                     types.Storage
 )
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 
 	updates := bot.GetUpdatesChan(u)
 
-	storage.Data = make(map[int64]types.UserData)
+	s = types.NewMemoryStorage()
 
 	for update := range updates {
 		switch {
@@ -64,10 +64,10 @@ func main() {
 func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.Message.Text == types.CommandMetricUnits:
-		storage.SetSystem(update.Message.Chat.ID, true)
+		s.SetSystem(update.Message.Chat.ID, true)
 		telegram.SendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOn)
 	case update.Message.Text == types.CommandNonMetricUnits:
-		storage.SetSystem(update.Message.Chat.ID, false)
+		s.SetSystem(update.Message.Chat.ID, false)
 		telegram.SendMessage(bot, update.Message.Chat.ID, types.MetrikUnitOff)
 	case update.Message.Text == types.CommandStart:
 		n := update.SentFrom()
@@ -76,7 +76,7 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case update.Message.Text == types.CommandHelp:
 		telegram.SendMessage(bot, update.Message.Chat.ID, types.HelpMessage)
 	default:
-		storage.SetCity(update.Message.Chat.ID, update.Message.Text)
+		s.SetCity(update.Message.Chat.ID, update.Message.Text)
 		err = telegram.SendMessageWithInlineKeyboard(bot, update.Message.Chat.ID, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
@@ -87,7 +87,7 @@ func handleUpdateMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 // Processes location messages from users.
 func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	uLat, uLon := fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-	storage.SetLocation(update.Message.Chat.ID, uLat, uLon)
+	s.SetLocation(update.Message.Chat.ID, uLat, uLon)
 	err = telegram.SendLocationOptions(bot, update.Message.Chat.ID, uLat, uLon)
 	if err != nil {
 		logger.ForErrorPrint(e.Wrap("", err))
@@ -98,16 +98,16 @@ func handleLocationMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.CallbackQuery.Data == types.CommandCurrent || update.CallbackQuery.Data == types.CommandForecast:
-		if storage.Data[update.CallbackQuery.Message.Chat.ID].City == "" {
+		if s.GetCity(update.CallbackQuery.Message.Chat.ID) == "" { //s.Data[update.CallbackQuery.Message.Chat.ID].City == "" {
 			userMessage = types.MissingCityMessage
 			telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
 		} else {
-			weatherUrl, err := weather.WeatherUrlByCity(storage.Data[update.CallbackQuery.Message.Chat.ID].City, tWeather, update.CallbackQuery.Data, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+			weatherUrl, err := weather.WeatherUrlByCity(s.GetCity(update.CallbackQuery.Message.Chat.ID), tWeather, update.CallbackQuery.Data, s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			storage.SetLast(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+			s.SetLast(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 				userMessage = e.Wrap("", err).Error()
@@ -120,16 +120,16 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			}
 		}
 	case update.CallbackQuery.Data == types.CommandForecastLocation || update.CallbackQuery.Data == types.CommandCurrentLocation:
-		if storage.Data[update.CallbackQuery.Message.Chat.ID].Lat == "" && storage.Data[update.CallbackQuery.Message.Chat.ID].Lon == "" {
+		if s.GetLat(update.CallbackQuery.Message.Chat.ID) == "" && s.GetLon(update.CallbackQuery.Message.Chat.ID) == "" {
 			userMessage = types.NoLocationProvidedMessage
 			telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, userMessage)
 		} else {
-			weatherUrl, err := weather.WeatherUrlByLocation(storage.Data[update.CallbackQuery.Message.Chat.ID].Lat, storage.Data[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, update.CallbackQuery.Data, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+			weatherUrl, err := weather.WeatherUrlByLocation(s.GetLat(update.CallbackQuery.Message.Chat.ID), s.GetLon(update.CallbackQuery.Message.Chat.ID), tWeather, update.CallbackQuery.Data, s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			}
-			storage.SetLast(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
-			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+			s.SetLast(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
+			userMessage, err = weather.GetWeather(weatherUrl, update.CallbackQuery.Data, s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 			if err != nil {
 				logger.ForErrorPrint(e.Wrap("", err))
 			} else {
@@ -144,18 +144,17 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 // Processes the "repeat last" callback query, sends the last weather data.
 func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	_, exists := storage.Data[update.CallbackQuery.Message.Chat.ID]
 	switch {
 	// If the users's last requested weather type is empty due to a bot restart.
-	case !exists:
+	case !s.Exists(update.CallbackQuery.Message.Chat.ID):
 		name := update.SentFrom()
 		telegram.SendMessage(bot, update.CallbackQuery.Message.Chat.ID, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
-	case storage.Data[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrent || storage.Data[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecast:
-		weatherUrl, err := weather.WeatherUrlByCity(storage.Data[update.CallbackQuery.Message.Chat.ID].City, tWeather, storage.Data[update.CallbackQuery.Message.Chat.ID].Last, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+	case s.GetLast(update.CallbackQuery.Message.Chat.ID) == types.CommandCurrent || s.GetLast(update.CallbackQuery.Message.Chat.ID) == types.CommandForecast:
+		weatherUrl, err := weather.WeatherUrlByCity(s.GetCity(update.CallbackQuery.Message.Chat.ID), tWeather, s.GetLast(update.CallbackQuery.Message.Chat.ID), s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
-		userMessage, err = weather.GetWeather(weatherUrl, storage.Data[update.CallbackQuery.Message.Chat.ID].Last, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+		userMessage, err = weather.GetWeather(weatherUrl, s.GetLast(update.CallbackQuery.Message.Chat.ID), s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 			userMessage = e.Wrap("", err).Error()
@@ -164,12 +163,12 @@ func handleLast(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
-	case storage.Data[update.CallbackQuery.Message.Chat.ID].Last == types.CommandForecastLocation || storage.Data[update.CallbackQuery.Message.Chat.ID].Last == types.CommandCurrentLocation:
-		weatherUrl, err := weather.WeatherUrlByLocation(storage.Data[update.CallbackQuery.Message.Chat.ID].Lat, storage.Data[update.CallbackQuery.Message.Chat.ID].Lon, tWeather, storage.Data[update.CallbackQuery.Message.Chat.ID].Last, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+	case s.GetLast(update.CallbackQuery.Message.Chat.ID) == types.CommandForecastLocation || s.GetLast(update.CallbackQuery.Message.Chat.ID) == types.CommandCurrentLocation:
+		weatherUrl, err := weather.WeatherUrlByLocation(s.GetLat(update.CallbackQuery.Message.Chat.ID), s.GetLon(update.CallbackQuery.Message.Chat.ID), tWeather, s.GetLast(update.CallbackQuery.Message.Chat.ID), s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}
-		userMessage, err = weather.GetWeather(weatherUrl, storage.Data[update.CallbackQuery.Message.Chat.ID].Last, storage.Data[update.CallbackQuery.Message.Chat.ID].Metric)
+		userMessage, err = weather.GetWeather(weatherUrl, s.GetLast(update.CallbackQuery.Message.Chat.ID), s.GetSystem(update.CallbackQuery.Message.Chat.ID))
 		if err != nil {
 			logger.ForErrorPrint(e.Wrap("", err))
 		}

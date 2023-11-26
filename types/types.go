@@ -106,31 +106,75 @@ type UserData struct {
 	Last   string
 }
 
-type Users struct {
+type MemoryStorage struct {
 	Data map[int64]UserData
 }
 
-func (u *Users) SetSystem(id int64, system bool) {
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
+		Data: make(map[int64]UserData),
+	}
+}
+
+type Storage interface {
+	SetSystem(id int64, system bool)
+	SetCity(id int64, city string)
+	SetLocation(id int64, lat, lon string)
+	SetLast(id int64, last string)
+	GetSystem(id int64) (system bool)
+	GetCity(id int64) string
+	GetLat(id int64) string
+	GetLon(id int64) string
+	GetLast(id int64) string
+	Exists(id int64) bool
+}
+
+func (u *MemoryStorage) SetSystem(id int64, system bool) {
 	currentData := u.Data[id]
 	currentData.Metric = system
 	u.Data[id] = currentData
 }
 
-func (u *Users) SetCity(id int64, city string) {
+func (u *MemoryStorage) SetCity(id int64, city string) {
 	currentData := u.Data[id]
 	currentData.City = city
 	u.Data[id] = currentData
 }
 
-func (u *Users) SetLocation(id int64, lat, lon string) {
+func (u *MemoryStorage) SetLocation(id int64, lat, lon string) {
 	currentData := u.Data[id]
 	currentData.Lat = lat
 	currentData.Lon = lon
 	u.Data[id] = currentData
 }
 
-func (u *Users) SetLast(id int64, last string) {
+func (u *MemoryStorage) SetLast(id int64, last string) {
 	currentData := u.Data[id]
 	currentData.Last = last
 	u.Data[id] = currentData
+}
+
+func (u *MemoryStorage) GetSystem(id int64) bool {
+	return u.Data[id].Metric
+}
+
+func (u *MemoryStorage) GetCity(id int64) string {
+	return u.Data[id].City
+}
+
+func (u *MemoryStorage) GetLat(id int64) string {
+	return u.Data[id].Lat
+}
+
+func (u *MemoryStorage) GetLon(id int64) string {
+	return u.Data[id].Lon
+}
+
+func (u *MemoryStorage) GetLast(id int64) string {
+	return u.Data[id].Last
+}
+
+func (u *MemoryStorage) Exists(id int64) bool {
+	_, e := u.Data[id]
+	return e
 }
