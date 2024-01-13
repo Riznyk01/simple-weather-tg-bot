@@ -27,11 +27,12 @@ Here are some screenshots of the bot in action:
 
 ## Environment Variables
 
-Make sure to set the following environment variables before running the bot. Create a `.env.dev` file in the root directory with the following content:
+Before running the bot, make sure to set the following environment variables:
 
-BOT_TOKEN=YOUR_BOT_TOKEN
-
-WEATHER_KEY=YOUR_OPENWEATHERMAP_API_KEY
+BOT_TOKEN=YOUR_BOT_TOKEN  
+WEATHER_KEY=YOUR_OPENWEATHERMAP_API_KEY  
+LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace)  
+TYPE_OF_LOG=(JSONLOG or TEXTLOG)  
 
 Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by creating a new bot on Telegram. Follow these steps:
 
@@ -41,6 +42,8 @@ Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by c
 4. Once the bot is created, BotFather will provide you with a token. Copy the token and replace `YOUR_BOT_TOKEN` in the `.env.dev` file.
 
 Get your free OpenWeatherMap API Key [here](https://home.openweathermap.org/api_keys).
+
+Set the values of the LOG_LEVEL and TYPE_OF_LOG variables from the provided options.
 
 ## Installation
 
@@ -78,4 +81,4 @@ Information about pricing, available plans, and limitations of the free API pack
 ## Note
 Some cities may return weather information correctly using the city name, while others may require the user's location. Use the preferred option for accurate results.
 
-Feel free to contribute and enhance the functionality of this simple weather bot!
+Feel free to contribute and enhance the functionality of this bot!
