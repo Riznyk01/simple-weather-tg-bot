@@ -1,7 +1,6 @@
 package weather
 
 import (
-	"SimpleWeatherTgBot/lib/e"
 	"SimpleWeatherTgBot/types"
 	"SimpleWeatherTgBot/utils"
 	"encoding/json"
@@ -14,6 +13,8 @@ import (
 var weatherData types.WeatherResponse
 var forecastData types.WeatherResponse5d3h
 var temperatureUnits, windUnits, pressureUnits string
+
+//TODO: add logger
 
 // Returns a complete weather message.
 func GetWeather(fullUrlGet, forecastType string, metric bool) (weatherMessage string, err error) {
@@ -48,13 +49,13 @@ func GetWeather(fullUrlGet, forecastType string, metric bool) (weatherMessage st
 	if forecastType == "current" || forecastType == "current 📍" {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
-			return "", e.Wrap("", err)
+			return "", err
 		}
 		weatherMessage, cityIdString = messageCurrentWeather(weatherData, metric)
 	} else if forecastType == "5-days forecast" || forecastType == "5-days forecast 📍" {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
-			return "", e.Wrap("", err)
+			return "", err
 		}
 		weatherMessage, cityIdString = messageForecastWeather(forecastData, metric)
 	}

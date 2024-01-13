@@ -1,7 +1,6 @@
 package weather
 
 import (
-	"SimpleWeatherTgBot/lib/e"
 	"net/url"
 )
 
@@ -9,6 +8,7 @@ const (
 	apiWeatherUrl = "https://api.openweathermap.org/data/2.5/"
 )
 
+// TODO: add logger
 func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 	if forecastType == "current" {
@@ -19,7 +19,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (st
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		return "", e.Wrap("", err)
+		return "", err
 	}
 
 	q := url.Values{}
@@ -44,7 +44,7 @@ func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricU
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		return "", e.Wrap("", err)
+		return "", err
 	}
 
 	q := url.Values{}
