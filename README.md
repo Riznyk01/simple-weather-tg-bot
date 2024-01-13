@@ -30,7 +30,7 @@ Here are some screenshots of the bot in action:
 Before running the bot, make sure to set the following environment variables:
 
 BOT_TOKEN=YOUR_BOT_TOKEN  
-WEATHER_KEY=YOUR_OPENWEATHERMAP_API_KEY  
+WEATHER_TOKEN=YOUR_OPENWEATHERMAP_API_KEY  
 LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace)  
 TYPE_OF_LOG=(JSONLOG or TEXTLOG)  
 
