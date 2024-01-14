@@ -37,6 +37,7 @@ func (u *MemoryStorage) SetLocation(id int64, lat, lon string) {
 	u.data[id] = currentData
 }
 
+// Set last users forecast type
 func (u *MemoryStorage) SetLast(id int64, last string) {
 	currentData := u.data[id]
 	currentData.Last = last

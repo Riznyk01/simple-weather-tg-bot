@@ -9,7 +9,7 @@ const (
 )
 
 // TODO: add logger
-func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, error) {
+func UrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 	if forecastType == "current" {
 		weatherUrl = apiWeatherUrl + "weather?"
@@ -33,7 +33,7 @@ func WeatherUrlByCity(city, tWeather, forecastType string, metricUnits bool) (st
 	return fullUrlGet, nil
 }
 
-func WeatherUrlByLocation(latStr, lonStr, tWeather, forecastType string, metricUnits bool) (string, error) {
+func UrlByLocation(latStr, lonStr, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 
 	if forecastType == "current 📍" {
