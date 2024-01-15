@@ -13,7 +13,7 @@ func (b *Bot) handleUpdateMessage(update tgbotapi.Update) {
 	switch update.Message.Text {
 	case types.CommandMetricUnits:
 		b.storage.SetSystem(chatId, true)
-		b.SendMessage(update.Message.Chat.ID, types.MetricUnitOn)
+		b.SendMessage(chatId, types.MetricUnitOn)
 	case types.CommandNonMetricUnits:
 		b.storage.SetSystem(chatId, false)
 		b.SendMessage(chatId, types.MetricUnitOff)
@@ -47,52 +47,27 @@ func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
 func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
 	callback := update.CallbackQuery.Data
+	param := make(map[string]string)
 	switch {
 	case callback == types.CommandCurrent || callback == types.CommandForecast:
-		if b.storage.GetCity(chatId) == "" {
-			userMessage := types.MissingCityMessage
-			b.SendMessage(chatId, userMessage)
-		} else {
-			param := make([]string, 1)
-			param[0] = b.storage.GetCity(chatId)
-			weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, callback, b.storage.GetSystem(chatId))
-			if err != nil {
-				b.log.Error(err)
-			}
-			b.storage.SetLast(chatId, callback)
-			userMessage, err := weather.GetWeather(weatherUrl, callback, b.storage.GetSystem(chatId))
-			if err != nil {
-				b.log.Error(err)
-				userMessage = err.Error()
-				b.SendMessage(chatId, userMessage)
-			} else {
-				err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
-				if err != nil {
-					b.log.Error(err)
-				}
-			}
-		}
+		param["city"] = b.storage.GetCity(chatId)
 	case callback == types.CommandForecastLocation || callback == types.CommandCurrentLocation:
-		if b.storage.GetLat(chatId) == "" && b.storage.GetLon(chatId) == "" {
-			userMessage := types.NoLocationProvidedMessage
-			b.SendMessage(chatId, userMessage)
-		} else {
-			param := make([]string, 2)
-			param[0], param[1] = b.storage.GetLat(chatId), b.storage.GetLon(chatId)
-			weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, callback, b.storage.GetSystem(chatId))
-			if err != nil {
-				b.log.Error(err)
-			}
-			b.storage.SetLast(chatId, callback)
-			userMessage, err := weather.GetWeather(weatherUrl, callback, b.storage.GetSystem(chatId))
-			if err != nil {
-				b.log.Error(err)
-			} else {
-				err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
-				if err != nil {
-					b.log.Error(err)
-				}
-			}
+		param["lat"] = b.storage.GetLat(chatId)
+		param["lon"] = b.storage.GetLon(chatId)
+	}
+	weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, callback, b.storage.GetSystem(chatId))
+	if err != nil {
+		b.log.Error(err)
+	}
+	b.storage.SetLast(chatId, callback)
+	userMessage, err := weather.GetWeather(weatherUrl, callback, b.storage.GetSystem(chatId))
+	if err != nil {
+		b.log.Error(err)
+		b.SendMessage(chatId, err.Error())
+	} else {
+		err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
+		if err != nil {
+			b.log.Error(err)
 		}
 	}
 }
@@ -100,14 +75,19 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 // Processes the "repeat last" callback query, sends the last weather data.
 func (b *Bot) handleLast(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
-	switch {
+	param := make(map[string]string)
 	// If the users last requested weather type is empty due to a bot restart.
-	case !b.storage.Exists(chatId):
+	if !b.storage.Exists(chatId) {
 		name := update.SentFrom()
 		b.SendMessage(chatId, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
-	case b.storage.GetLast(chatId) == types.CommandCurrent || b.storage.GetLast(chatId) == types.CommandForecast:
-		param := make([]string, 1)
-		param[0] = b.storage.GetCity(chatId)
+	} else {
+		switch {
+		case b.storage.GetLast(chatId) == types.CommandCurrent || b.storage.GetLast(chatId) == types.CommandForecast:
+			param["city"] = b.storage.GetCity(chatId)
+		case b.storage.GetLast(chatId) == types.CommandForecastLocation || b.storage.GetLast(chatId) == types.CommandCurrentLocation:
+			param["lat"] = b.storage.GetLat(chatId)
+			param["lon"] = b.storage.GetLon(chatId)
+		}
 		weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
 		if err != nil {
 			b.log.Error(err)
@@ -116,21 +96,6 @@ func (b *Bot) handleLast(update tgbotapi.Update) {
 		if err != nil {
 			b.log.Error(err)
 			userMessage = err.Error()
-		}
-		err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
-		if err != nil {
-			b.log.Error(err)
-		}
-	case b.storage.GetLast(chatId) == types.CommandForecastLocation || b.storage.GetLast(chatId) == types.CommandCurrentLocation:
-		loc := make([]string, 2)
-		loc[0], loc[1] = b.storage.GetLat(chatId), b.storage.GetLon(chatId)
-		weatherUrl, err := weather.GenerateWeatherUrl(loc, b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
-		if err != nil {
-			b.log.Error(err)
-		}
-		userMessage, err := weather.GetWeather(weatherUrl, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
-		if err != nil {
-			b.log.Error(err)
 		}
 		err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
 		if err != nil {

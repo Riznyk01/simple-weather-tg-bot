@@ -10,7 +10,7 @@ const (
 )
 
 // TODO: add logger
-func GenerateWeatherUrl(weatherParam []string, tWeather, forecastType string, metricUnits bool) (string, error) {
+func GenerateWeatherUrl(weatherParam map[string]string, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
 
 	if forecastType == types.CommandCurrent || forecastType == types.CommandCurrentLocation {
@@ -25,11 +25,11 @@ func GenerateWeatherUrl(weatherParam []string, tWeather, forecastType string, me
 	}
 
 	q := url.Values{}
-	if len(weatherParam) == 1 {
-		q.Add("q", weatherParam[0])
-	} else if len(weatherParam) == 2 {
-		q.Add("lat", weatherParam[0])
-		q.Add("lon", weatherParam[1])
+	if _, ex := weatherParam["city"]; ex {
+		q.Add("q", weatherParam["city"])
+	} else if _, exLat := weatherParam["lat"]; exLat {
+		q.Add("lat", weatherParam["lat"])
+		q.Add("lon", weatherParam["lon"])
 	}
 	q.Add("appid", tWeather)
 	if metricUnits {
