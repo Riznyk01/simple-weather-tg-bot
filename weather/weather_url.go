@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"SimpleWeatherTgBot/types"
 	"net/url"
 )
 
@@ -9,11 +10,12 @@ const (
 )
 
 // TODO: add logger
-func UrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, error) {
+func GenerateWeatherUrl(weatherParam []string, tWeather, forecastType string, metricUnits bool) (string, error) {
 	var weatherUrl string
-	if forecastType == "current" {
+
+	if forecastType == types.CommandCurrent || forecastType == types.CommandCurrentLocation {
 		weatherUrl = apiWeatherUrl + "weather?"
-	} else if forecastType == "5-days forecast" {
+	} else if forecastType == types.CommandForecast || forecastType == types.CommandForecastLocation {
 		weatherUrl = apiWeatherUrl + "forecast?"
 	}
 
@@ -23,33 +25,12 @@ func UrlByCity(city, tWeather, forecastType string, metricUnits bool) (string, e
 	}
 
 	q := url.Values{}
-	q.Add("q", city)
-	q.Add("appid", tWeather)
-	if metricUnits {
-		q.Add("units", "metric")
+	if len(weatherParam) == 1 {
+		q.Add("q", weatherParam[0])
+	} else if len(weatherParam) == 2 {
+		q.Add("lat", weatherParam[0])
+		q.Add("lon", weatherParam[1])
 	}
-	u.RawQuery = q.Encode()
-	fullUrlGet := u.String()
-	return fullUrlGet, nil
-}
-
-func UrlByLocation(latStr, lonStr, tWeather, forecastType string, metricUnits bool) (string, error) {
-	var weatherUrl string
-
-	if forecastType == "current 📍" {
-		weatherUrl = apiWeatherUrl + "weather?"
-	} else if forecastType == "5-days forecast 📍" {
-		weatherUrl = apiWeatherUrl + "forecast?"
-	}
-
-	u, err := url.Parse(weatherUrl)
-	if err != nil {
-		return "", err
-	}
-
-	q := url.Values{}
-	q.Add("lat", latStr)
-	q.Add("lon", lonStr)
 	q.Add("appid", tWeather)
 	if metricUnits {
 		q.Add("units", "metric")

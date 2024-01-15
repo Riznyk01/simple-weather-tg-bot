@@ -53,7 +53,9 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 			userMessage := types.MissingCityMessage
 			b.SendMessage(chatId, userMessage)
 		} else {
-			weatherUrl, err := weather.UrlByCity(b.storage.GetCity(chatId), b.cfg.WToken, callback, b.storage.GetSystem(chatId))
+			param := make([]string, 1)
+			param[0] = b.storage.GetCity(chatId)
+			weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, callback, b.storage.GetSystem(chatId))
 			if err != nil {
 				b.log.Error(err)
 			}
@@ -75,7 +77,9 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 			userMessage := types.NoLocationProvidedMessage
 			b.SendMessage(chatId, userMessage)
 		} else {
-			weatherUrl, err := weather.UrlByLocation(b.storage.GetLat(chatId), b.storage.GetLon(chatId), b.cfg.WToken, callback, b.storage.GetSystem(chatId))
+			param := make([]string, 2)
+			param[0], param[1] = b.storage.GetLat(chatId), b.storage.GetLon(chatId)
+			weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, callback, b.storage.GetSystem(chatId))
 			if err != nil {
 				b.log.Error(err)
 			}
@@ -102,7 +106,9 @@ func (b *Bot) handleLast(update tgbotapi.Update) {
 		name := update.SentFrom()
 		b.SendMessage(chatId, types.LastDataUnavailable+name.FirstName+types.LastDataUnavailableEnd)
 	case b.storage.GetLast(chatId) == types.CommandCurrent || b.storage.GetLast(chatId) == types.CommandForecast:
-		weatherUrl, err := weather.UrlByCity(b.storage.GetCity(chatId), b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
+		param := make([]string, 1)
+		param[0] = b.storage.GetCity(chatId)
+		weatherUrl, err := weather.GenerateWeatherUrl(param, b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
 		if err != nil {
 			b.log.Error(err)
 		}
@@ -116,7 +122,9 @@ func (b *Bot) handleLast(update tgbotapi.Update) {
 			b.log.Error(err)
 		}
 	case b.storage.GetLast(chatId) == types.CommandForecastLocation || b.storage.GetLast(chatId) == types.CommandCurrentLocation:
-		weatherUrl, err := weather.UrlByLocation(b.storage.GetLat(chatId), b.storage.GetLon(chatId), b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
+		loc := make([]string, 2)
+		loc[0], loc[1] = b.storage.GetLat(chatId), b.storage.GetLon(chatId)
+		weatherUrl, err := weather.GenerateWeatherUrl(loc, b.cfg.WToken, b.storage.GetLast(chatId), b.storage.GetSystem(chatId))
 		if err != nil {
 			b.log.Error(err)
 		}
