@@ -32,7 +32,8 @@ Before running the bot, make sure to set the following environment variables:
 BOT_TOKEN=YOUR_BOT_TOKEN  
 WEATHER_TOKEN=YOUR_OPENWEATHERMAP_API_KEY  
 LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace)  
-TYPE_OF_LOG=(JSONLOG or TEXTLOG)  
+TYPE_OF_LOG=(JSONLOG or TEXTLOG)
+WEATHER_API_URL=https://api.openweathermap.org/data/2.5/  
 
 Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by creating a new bot on Telegram. Follow these steps:
 
@@ -73,7 +74,7 @@ sudo docker ps
 /start: sends a welcome message and instructions to the user.  
 /help: provides information on how to use the bot.  
 /metric: set metric units  
-/nonmetric: set non-metric units  
+/nonmetric: set non-metric units
 
 ## Pricing Information
 Information about pricing, available plans, and limitations of the free API package can be found [here](https://openweathermap.org/price).

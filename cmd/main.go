@@ -5,16 +5,15 @@ import (
 	"SimpleWeatherTgBot/logger"
 	"SimpleWeatherTgBot/repository"
 	"SimpleWeatherTgBot/telegram"
-	"SimpleWeatherTgBot/weather"
+	"SimpleWeatherTgBot/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func main() {
-	repo := repository.NewRepository()
-	weatherService := weather.NewWClient(repo)
-	log := logger.SetupLogger()
-	//stor := repository.NewMemoryStorage()
 	cfg := config.NewConfig()
+	repo := repository.NewRepository()
+	log := logger.SetupLogger()
+	weatherService := weather_service.NewWClient(repo, cfg, log)
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {

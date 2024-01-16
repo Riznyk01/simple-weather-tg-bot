@@ -1,20 +1,14 @@
 package repository
 
-type UserData struct {
-	City   string
-	Lat    string
-	Lon    string
-	Metric bool
-	Last   string
-}
+import "SimpleWeatherTgBot/types"
 
 type MemoryStorage struct {
-	data map[int64]UserData
+	data map[int64]types.UserData
 }
 
 func NewMemoryStorage() *MemoryStorage {
 	return &MemoryStorage{
-		data: make(map[int64]UserData),
+		data: make(map[int64]types.UserData),
 	}
 }
 
@@ -38,14 +32,15 @@ func (u *MemoryStorage) SetLocation(id int64, lat, lon string) {
 }
 
 // Set last users forecast type
-func (u *MemoryStorage) SetLast(id int64, last string) {
+func (u *MemoryStorage) SetLast(id int64, last string) error {
 	currentData := u.data[id]
 	currentData.Last = last
 	u.data[id] = currentData
+	return nil
 }
 
-func (u *MemoryStorage) GetSystem(id int64) bool {
-	return u.data[id].Metric
+func (u *MemoryStorage) GetSystem(id int64) (bool, error) {
+	return u.data[id].Metric, nil
 }
 
 func (u *MemoryStorage) GetCity(id int64) string {
@@ -60,8 +55,8 @@ func (u *MemoryStorage) GetLon(id int64) string {
 	return u.data[id].Lon
 }
 
-func (u *MemoryStorage) GetLast(id int64) string {
-	return u.data[id].Last
+func (u *MemoryStorage) GetLast(id int64) (weatherCommand string, err error) {
+	return u.data[id].Last, nil
 }
 
 func (u *MemoryStorage) Exists(id int64) bool {

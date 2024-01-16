@@ -3,7 +3,7 @@ package telegram
 import (
 	"SimpleWeatherTgBot/config"
 	"SimpleWeatherTgBot/types"
-	"SimpleWeatherTgBot/weather"
+	"SimpleWeatherTgBot/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
@@ -11,11 +11,11 @@ import (
 type Bot struct {
 	bot            *tgbotapi.BotAPI
 	log            *logrus.Logger
-	weatherService *weather.WeatherService
+	weatherService *weather_service.WeatherService
 	cfg            *config.Config
 }
 
-func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather.WeatherService, cfg *config.Config) *Bot {
+func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather_service.WeatherService, cfg *config.Config) *Bot {
 	return &Bot{
 		bot:            bot,
 		log:            log,
@@ -36,14 +36,14 @@ func (b *Bot) Run() error {
 			b.handleUpdateMessage(update)
 		case update.Message != nil && update.Message.Location != nil:
 			//When user sends location
-			//b.handleLocationMessage(update)
+			b.handleLocationMessage(update)
 		case update.Message == nil && update.CallbackQuery != nil:
 			if update.CallbackQuery.Data != types.CommandLast {
 				//When user choose forecast type
-				//	b.handleCallbackQuery(update)
+				b.handleCallbackQuery(update)
 			} else {
 				//When user choose last forecast
-				//	b.handleLast(update)
+				b.handleLast(update)
 			}
 		}
 	}

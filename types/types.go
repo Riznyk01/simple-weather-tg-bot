@@ -1,5 +1,13 @@
 package types
 
+type UserData struct {
+	City   string
+	Lat    string
+	Lon    string
+	Metric bool
+	Last   string
+}
+
 type WeatherResponse struct {
 	Coord struct {
 		Lon float64 `json:"lon"`
