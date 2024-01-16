@@ -1,4 +1,4 @@
-package storage
+package repository
 
 type UserData struct {
 	City   string
