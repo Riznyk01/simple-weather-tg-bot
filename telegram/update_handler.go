@@ -62,7 +62,7 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 }
 
 // Processes the "repeat last" callback query, sends the last weather_service data.
-func (b *Bot) handleLast(update tgbotapi.Update) {
+func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
 	userMessage, err := b.weatherService.WeatherUserControl.GetLast(chatId)
 	if userMessage == "empty" {

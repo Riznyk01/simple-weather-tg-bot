@@ -43,7 +43,7 @@ func (b *Bot) Run() error {
 				b.handleCallbackQuery(update)
 			} else {
 				//When user choose last forecast
-				b.handleLast(update)
+				b.handleCallbackQueryLast(update)
 			}
 		}
 	}

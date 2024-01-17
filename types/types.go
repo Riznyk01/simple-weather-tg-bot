@@ -8,7 +8,7 @@ type UserData struct {
 	Last   string
 }
 
-type WeatherResponse struct {
+type WeatherCurrent struct {
 	Coord struct {
 		Lon float64 `json:"lon"`
 		Lat float64 `json:"lat"`
@@ -50,7 +50,7 @@ type WeatherResponse struct {
 	Cod      int    `json:"cod"`
 }
 
-type WeatherResponse5d3h struct {
+type WeatherForecast struct {
 	Cod     string `json:"cod"`
 	Message int    `json:"message"`
 	Cnt     int    `json:"cnt"`

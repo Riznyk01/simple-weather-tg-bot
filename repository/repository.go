@@ -1,16 +1,15 @@
 package repository
 
 type WeatherUserControl interface {
-	SetSystem(id int64, system bool)
-	SetCity(id int64, city string)
-	SetLocation(id int64, lat, lon string)
+	SetSystem(id int64, system bool) error
+	SetCity(id int64, city string) error
+	SetLocation(id int64, lat, lon string) error
 	SetLast(id int64, last string) error
 	GetSystem(id int64) (bool, error)
-	GetCity(id int64) string
-	GetLat(id int64) string
-	GetLon(id int64) string
-	GetLast(id int64) (weatherCommand string, err error)
-	Exists(id int64) bool
+	GetCity(id int64) (string, error)
+	GetLocation(id int64) (string, string, error)
+	GetLast(id int64) (string, error)
+	Exists(id int64) (bool, error)
 }
 
 type Repository struct {
