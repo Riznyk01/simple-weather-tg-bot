@@ -178,6 +178,9 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 	}
 	return weatherMessage, nil
 }
+func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) int {
+	return OW.repo.AddRequestsCount(chatId)
+}
 
 // Returns units based on the metric system.
 func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {

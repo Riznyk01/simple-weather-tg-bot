@@ -16,6 +16,7 @@ type WeatherUserControl interface {
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
 	Exists(id int64) (bool, error)
+	AddRequestsCount(chatId int64) int
 }
 
 type WeatherService struct {
