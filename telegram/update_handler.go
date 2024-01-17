@@ -11,20 +11,32 @@ func (b *Bot) handleUpdateMessage(update tgbotapi.Update) {
 	chatId := update.Message.Chat.ID
 	switch update.Message.Text {
 	case types.CommandMetricUnits:
-		b.weatherService.WeatherUserControl.SetSystem(chatId, true)
+		err := b.weatherService.WeatherUserControl.SetSystem(chatId, true)
+		if err != nil {
+			b.SendMessage(update.Message.Chat.ID, types.SetUsersSystemError)
+			b.log.Error(types.SetUsersSystemError)
+		}
 		b.SendMessage(chatId, types.MetricUnitOn)
 	case types.CommandNonMetricUnits:
-		b.weatherService.WeatherUserControl.SetSystem(chatId, false)
+		err := b.weatherService.WeatherUserControl.SetSystem(chatId, false)
+		if err != nil {
+			b.SendMessage(update.Message.Chat.ID, types.SetUsersSystemError)
+			b.log.Error(types.SetUsersSystemError)
+		}
 		b.SendMessage(chatId, types.MetricUnitOff)
 	case types.CommandStart:
 		n := update.SentFrom()
-		greet := fmt.Sprintf("%s%s%s%s", types.WelcomeMessage, n.FirstName, types.WelcomeMessageEnd, types.HelpMessage)
+		greet := fmt.Sprintf(types.WelcomeMessage, n.FirstName) + types.HelpMessage
 		b.SendMessage(chatId, greet)
 	case types.CommandHelp:
 		b.SendMessage(chatId, types.HelpMessage)
 	default:
-		b.weatherService.WeatherUserControl.SetCity(chatId, update.Message.Text)
-		err := b.SendMessageWithInlineKeyboard(chatId, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
+		err := b.weatherService.WeatherUserControl.SetCity(chatId, update.Message.Text)
+		if err != nil {
+			b.SendMessage(update.Message.Chat.ID, types.SetUsersCityError)
+			b.log.Error(types.SetUsersCityError)
+		}
+		err = b.SendMessageWithInlineKeyboard(chatId, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
 		if err != nil {
 			b.log.Error(err)
 		}
@@ -35,8 +47,12 @@ func (b *Bot) handleUpdateMessage(update tgbotapi.Update) {
 func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
 	chatId := update.Message.Chat.ID
 	uLat, uLon := fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-	b.weatherService.WeatherUserControl.SetLocation(chatId, uLat, uLon)
-	err := b.SendLocationOptions(chatId, uLat, uLon)
+	err := b.weatherService.WeatherUserControl.SetLocation(chatId, uLat, uLon)
+	if err != nil {
+		b.log.Error(types.SetUsersLocationError)
+		b.SendMessage(update.Message.Chat.ID, types.SetUsersLocationError)
+	}
+	err = b.SendLocationOptions(chatId, uLat, uLon)
 	if err != nil {
 		b.log.Error(err)
 	}
@@ -61,7 +77,7 @@ func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
 func (b *Bot) handleCallbackQueryHandlingError(update tgbotapi.Update, userMessage string, err error) {
 	if userMessage == "empty" {
 		n := update.SentFrom()
-		b.SendMessage(update.Message.Chat.ID, fmt.Sprintf(types.LastDataUnavailable+n.FirstName+types.LastDataUnavailableEnd))
+		b.SendMessage(update.Message.Chat.ID, fmt.Sprintf(types.LastDataUnavailable, n.FirstName))
 	} else if err != nil {
 		b.log.Error(err)
 		b.SendMessage(update.Message.Chat.ID, err.Error())
