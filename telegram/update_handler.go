@@ -63,26 +63,25 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
 	weatherCommand := update.CallbackQuery.Data
 	userMessage, err := b.weatherService.WeatherUserControl.SetLast(chatId, weatherCommand)
-	b.handleCallbackQueryHandlingError(update, userMessage, err)
+	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
 }
 
 // handleCallbackQueryLast processes the "repeat last" callback query, sends the last weather data.
 func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
 	userMessage, err := b.weatherService.WeatherUserControl.GetLast(chatId)
-	b.handleCallbackQueryHandlingError(update, userMessage, err)
+	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
 }
 
 // handleCallbackQueryHandlingError handles errors in callback query processing.
-func (b *Bot) handleCallbackQueryHandlingError(update tgbotapi.Update, userMessage string, err error) {
+func (b *Bot) handleCallbackQueryHandlingError(name, userMessage string, chatId int64, err error) {
 	if userMessage == "empty" {
-		n := update.SentFrom()
-		b.SendMessage(update.Message.Chat.ID, fmt.Sprintf(types.LastDataUnavailable, n.FirstName))
+		b.SendMessage(chatId, fmt.Sprintf(types.LastDataUnavailable, name))
 	} else if err != nil {
 		b.log.Error(err)
-		b.SendMessage(update.Message.Chat.ID, err.Error())
+		b.SendMessage(chatId, err.Error())
 	} else {
-		err = b.SendMessageWithInlineKeyboard(update.Message.Chat.ID, userMessage, types.CommandLast)
+		err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
 		if err != nil {
 			b.log.Error(err)
 		}
