@@ -27,21 +27,22 @@ func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 
 // handleTextMessage processes text messages and commands from users.
 func (b *Bot) handleTextMessage(update tgbotapi.Update) {
+	fc := "handleTextMessage"
 	chatId := update.Message.Chat.ID
-	b.infoLogger(chatId, update)
+	b.infoLogger(fc, chatId, update)
 
 	switch update.Message.Text {
 	case types.CommandMetricUnits:
 		err := b.weatherService.WeatherUserControl.SetSystem(chatId, true)
 		if err != nil {
-			b.SendMessage(update.Message.Chat.ID, types.SetUsersSystemError)
+			b.SendMessage(chatId, types.SetUsersSystemError)
 			b.log.Error(types.SetUsersSystemError)
 		}
 		b.SendMessage(chatId, types.MetricUnitOn)
 	case types.CommandNonMetricUnits:
 		err := b.weatherService.WeatherUserControl.SetSystem(chatId, false)
 		if err != nil {
-			b.SendMessage(update.Message.Chat.ID, types.SetUsersSystemError)
+			b.SendMessage(chatId, types.SetUsersSystemError)
 			b.log.Error(types.SetUsersSystemError)
 		}
 		b.SendMessage(chatId, types.MetricUnitOff)
@@ -66,13 +67,14 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 
 // handleLocationMessage processes location messages from users.
 func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
+	fc := "handleLocationMessage"
 	chatId := update.Message.Chat.ID
-	b.infoLogger(chatId, update)
+	b.infoLogger(fc, chatId, update)
 	uLat, uLon := fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
 	err := b.weatherService.WeatherUserControl.SetLocation(chatId, uLat, uLon)
 	if err != nil {
 		b.log.Error(types.SetUsersLocationError)
-		b.SendMessage(update.Message.Chat.ID, types.SetUsersLocationError)
+		b.SendMessage(chatId, types.SetUsersLocationError)
 	}
 	err = b.SendLocationOptions(chatId, uLat, uLon)
 	if err != nil {
@@ -82,8 +84,9 @@ func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
 
 // handleCallbackQuery processes callback queries from users.
 func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
+	fc := "handleCallbackQuery"
 	chatId := update.CallbackQuery.Message.Chat.ID
-	b.infoLogger(chatId, update)
+	b.infoLogger(fc, chatId, update)
 	weatherCommand := update.CallbackQuery.Data
 	userMessage, err := b.weatherService.WeatherUserControl.SetLast(chatId, weatherCommand)
 	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
@@ -91,8 +94,9 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 
 // handleCallbackQueryLast processes the "repeat last" callback query, sends the last weather data.
 func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
+	fc := "handleCallbackQueryLast"
 	chatId := update.CallbackQuery.Message.Chat.ID
-	b.infoLogger(chatId, update)
+	b.infoLogger(fc, chatId, update)
 	userMessage, err := b.weatherService.WeatherUserControl.GetLast(chatId)
 	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
 }
@@ -112,7 +116,7 @@ func (b *Bot) handleCallbackQueryHandlingError(name, userMessage string, chatId 
 	}
 }
 
-func (b *Bot) infoLogger(chatId int64, update tgbotapi.Update) {
+func (b *Bot) infoLogger(fc string, chatId int64, update tgbotapi.Update) {
 	RequestsCount := b.weatherService.AddRequestsCount(chatId)
 	var action string
 	switch {
@@ -123,8 +127,6 @@ func (b *Bot) infoLogger(chatId int64, update tgbotapi.Update) {
 	case update.Message.Location != nil:
 		action = fmt.Sprintf(" location: %v", update.Message.Location)
 	}
-	b.log.Debug(
-		"U.ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
-		" @", update.SentFrom().UserName, " req.count: ", RequestsCount,
-		action)
+	b.log.Debug(fc, " U.ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
+		" @", update.SentFrom().UserName, " req.count: ", RequestsCount, action)
 }
