@@ -117,7 +117,10 @@ func (b *Bot) handleCallbackQueryHandlingError(name, userMessage string, chatId 
 }
 
 func (b *Bot) infoLogger(fc string, chatId int64, update tgbotapi.Update) {
-	RequestsCount := b.weatherService.AddRequestsCount(chatId)
+	RequestsCount, err := b.weatherService.AddRequestsCount(chatId)
+	if err != nil {
+		b.log.Error(err)
+	}
 	var action string
 	switch {
 	case update.CallbackQuery != nil:
@@ -127,6 +130,6 @@ func (b *Bot) infoLogger(fc string, chatId int64, update tgbotapi.Update) {
 	case update.Message.Location != nil:
 		action = fmt.Sprintf(" location: %v", update.Message.Location)
 	}
-	b.log.Debug(fc, " U.ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
+	b.log.Debug(fc, " ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
 		" @", update.SentFrom().UserName, " req.count: ", RequestsCount, action)
 }
