@@ -52,9 +52,6 @@ func (OW *OpenWeatherMapService) GetCity(chatId int64) (string, error) {
 func (OW *OpenWeatherMapService) GetLocation(chatId int64) (string, string, error) {
 	return OW.repo.GetLocation(chatId)
 }
-func (OW *OpenWeatherMapService) Exists(chatId int64) (bool, error) {
-	return OW.repo.Exists(chatId)
-}
 
 // Returns a complete weather message and sets last weather responce.
 func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
@@ -95,9 +92,6 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 		lat, lon, err := OW.repo.GetLocation(chatId)
 		if err != nil {
 			return "", err
-		}
-		if lat == "" || lon == "" {
-			return "empty", err
 		}
 		q.Add("lat", lat)
 		q.Add("lon", lon)
@@ -160,13 +154,6 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 }
 
 func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, err error) {
-	ex, err := OW.repo.Exists(chatId)
-	if err != nil {
-		return "", err
-	}
-	if !ex {
-		return "empty", err
-	}
 	weatherCommand, err := OW.repo.GetLast(chatId)
 	if err != nil {
 		return "", err
@@ -179,6 +166,13 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 }
 func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) (int, error) {
 	return OW.repo.AddRequestsCount(chatId)
+}
+
+func (OW *OpenWeatherMapService) SetRepliedUserId(chatId, replId int64) error {
+	return OW.repo.SetRepliedUserId(chatId, replId)
+}
+func (OW *OpenWeatherMapService) GetRepliedUserId(chatId int64) (int64, error) {
+	return OW.repo.GetRepliedUserId(chatId)
 }
 
 // Returns units based on the metric system.

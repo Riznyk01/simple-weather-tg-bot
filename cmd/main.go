@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SimpleWeatherTgBot/admin"
 	"SimpleWeatherTgBot/config"
 	"SimpleWeatherTgBot/logger"
 	"SimpleWeatherTgBot/repository"
@@ -10,9 +11,12 @@ import (
 )
 
 func main() {
+
 	cfg := config.NewConfig()
-	repo := repository.NewRepository()
+	mem := repository.NewMemoryStorage()
+	repo := repository.NewRepository(mem)
 	log := logger.SetupLogger()
+	adm := admin.NewAdminService(repo, log, cfg)
 	weatherService := weather_service.NewWClient(repo, cfg, log)
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.BotToken)
@@ -20,6 +24,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tBot := telegram.NewBot(botApi, log, weatherService, cfg)
+	tBot := telegram.NewBot(botApi, log, weatherService, cfg, adm)
 	tBot.Run()
 }

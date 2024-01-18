@@ -1,12 +1,14 @@
 package types
 
 type UserData struct {
-	City        string
-	Lat         string
-	Lon         string
-	Metric      bool
-	Last        string
-	RequestsNum int
+	City          string
+	Lat           string
+	Lon           string
+	Metric        bool
+	Last          string
+	RequestsNum   int
+	Ban           bool
+	RepliedUserId int64
 }
 
 type WeatherCurrent struct {

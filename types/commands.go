@@ -10,4 +10,6 @@ const (
 	CommandCurrentLocation  = "current 📍"
 	CommandMetricUnits      = "/metric"
 	CommandNonMetricUnits   = "/nonmetric"
+	CommandBan              = "/ban"
+	CommandUnBan            = "/unban"
 )
