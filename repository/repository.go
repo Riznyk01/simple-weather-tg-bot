@@ -1,6 +1,6 @@
 package repository
 
-type WeatherUserControl interface {
+type WeatherControl interface {
 	SetSystem(id int64, system bool) error
 	SetCity(id int64, city string) error
 	SetLocation(id int64, lat, lon string) error
@@ -9,16 +9,24 @@ type WeatherUserControl interface {
 	GetCity(id int64) (string, error)
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
-	Exists(id int64) (bool, error)
 	AddRequestsCount(id int64) (int, error)
+	SetRepliedUserId(chatId, replId int64) error
+	GetRepliedUserId(userId int64) (int64, error)
+}
+
+type UserControl interface {
+	BanUser(id int64) error
+	UnbanUser(id int64) error
 }
 
 type Repository struct {
-	WeatherUserControl
+	WeatherControl
+	UserControl
 }
 
-func NewRepository() *Repository {
+func NewRepository(memoryStor *MemoryStorage) *Repository {
 	return &Repository{
-		WeatherUserControl: NewMemoryStorage(),
+		WeatherControl: NewWeatherControlMemoryStorage(memoryStor),
+		UserControl:    NewUserControlMemoryStorage(memoryStor),
 	}
 }

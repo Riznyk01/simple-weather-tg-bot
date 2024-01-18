@@ -2,12 +2,17 @@ package telegram
 
 import (
 	"SimpleWeatherTgBot/types"
+	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var ErrLastEmpty = errors.New("the item is empty")
+
 func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 	switch {
+	case update.Message != nil && update.Message.ForwardFrom != nil:
+		b.handleReply(update)
 	case update.Message != nil && update.Message.Location == nil:
 		//When user sends command or cityname
 		b.handleTextMessage(update)
@@ -33,14 +38,14 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 
 	switch update.Message.Text {
 	case types.CommandMetricUnits:
-		err := b.weatherService.WeatherUserControl.SetSystem(chatId, true)
+		err := b.weatherService.WeatherControl.SetSystem(chatId, true)
 		if err != nil {
 			b.SendMessage(chatId, types.SetUsersSystemError)
 			b.log.Error(types.SetUsersSystemError)
 		}
 		b.SendMessage(chatId, types.MetricUnitOn)
 	case types.CommandNonMetricUnits:
-		err := b.weatherService.WeatherUserControl.SetSystem(chatId, false)
+		err := b.weatherService.WeatherControl.SetSystem(chatId, false)
 		if err != nil {
 			b.SendMessage(chatId, types.SetUsersSystemError)
 			b.log.Error(types.SetUsersSystemError)
@@ -52,8 +57,12 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 		b.SendMessage(chatId, greet)
 	case types.CommandHelp:
 		b.SendMessage(chatId, types.HelpMessage)
+	case types.CommandBan:
+		//
+	case types.CommandUnBan:
+		//
 	default:
-		err := b.weatherService.WeatherUserControl.SetCity(chatId, update.Message.Text)
+		err := b.weatherService.WeatherControl.SetCity(chatId, update.Message.Text)
 		if err != nil {
 			b.SendMessage(update.Message.Chat.ID, types.SetUsersCityError)
 			b.log.Error(types.SetUsersCityError)
@@ -65,13 +74,22 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 	}
 }
 
+func (b *Bot) handleReply(update tgbotapi.Update) {
+	fc := "handleReply"
+	chatId := update.Message.Chat.ID
+	b.infoLogger(fc, chatId, update)
+	b.weatherService.SetRepliedUserId(update.Message.Chat.ID, update.Message.ForwardFrom.ID)
+	replId, _ := b.weatherService.GetRepliedUserId(update.Message.Chat.ID)
+	b.SendMessage(chatId, fmt.Sprintf("%v", replId))
+}
+
 // handleLocationMessage processes location messages from users.
 func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
 	fc := "handleLocationMessage"
 	chatId := update.Message.Chat.ID
 	b.infoLogger(fc, chatId, update)
 	uLat, uLon := fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-	err := b.weatherService.WeatherUserControl.SetLocation(chatId, uLat, uLon)
+	err := b.weatherService.WeatherControl.SetLocation(chatId, uLat, uLon)
 	if err != nil {
 		b.log.Error(types.SetUsersLocationError)
 		b.SendMessage(chatId, types.SetUsersLocationError)
@@ -88,7 +106,7 @@ func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
 	chatId := update.CallbackQuery.Message.Chat.ID
 	b.infoLogger(fc, chatId, update)
 	weatherCommand := update.CallbackQuery.Data
-	userMessage, err := b.weatherService.WeatherUserControl.SetLast(chatId, weatherCommand)
+	userMessage, err := b.weatherService.WeatherControl.SetLast(chatId, weatherCommand)
 	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
 }
 
@@ -97,13 +115,13 @@ func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
 	fc := "handleCallbackQueryLast"
 	chatId := update.CallbackQuery.Message.Chat.ID
 	b.infoLogger(fc, chatId, update)
-	userMessage, err := b.weatherService.WeatherUserControl.GetLast(chatId)
+	userMessage, err := b.weatherService.WeatherControl.GetLast(chatId)
 	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
 }
 
 // handleCallbackQueryHandlingError handles errors in callback query processing.
 func (b *Bot) handleCallbackQueryHandlingError(name, userMessage string, chatId int64, err error) {
-	if userMessage == "empty" {
+	if errors.Is(err, ErrLastEmpty) {
 		b.SendMessage(chatId, fmt.Sprintf(types.LastDataUnavailable, name))
 	} else if err != nil {
 		b.log.Error(err)

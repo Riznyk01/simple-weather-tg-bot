@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type WeatherUserControl interface {
+type WeatherControl interface {
 	SetSystem(id int64, system bool) error
 	SetCity(id int64, city string) error
 	SetLocation(id int64, lat, lon string) error
@@ -15,17 +15,18 @@ type WeatherUserControl interface {
 	GetCity(id int64) (string, error)
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
-	Exists(id int64) (bool, error)
 	AddRequestsCount(id int64) (int, error)
+	GetRepliedUserId(userId int64) (int64, error)
+	SetRepliedUserId(userId, replId int64) error
 }
 
 type WeatherService struct {
-	WeatherUserControl
+	WeatherControl
 }
 
 func NewWClient(repo *repository.Repository, cfg *config.Config, log *logrus.Logger) *WeatherService {
 	return &WeatherService{
-		WeatherUserControl: NewOpenWeatherMap(
+		WeatherControl: NewOpenWeatherMap(
 			repo,
 			cfg,
 			log),
