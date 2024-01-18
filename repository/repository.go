@@ -10,7 +10,7 @@ type WeatherUserControl interface {
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
 	Exists(id int64) (bool, error)
-	AddRequestsCount(id int64) int
+	AddRequestsCount(id int64) (int, error)
 }
 
 type Repository struct {

@@ -70,9 +70,9 @@ func (u *MemoryStorage) Exists(id int64) (bool, error) {
 	_, e := u.data[id]
 	return e, nil
 }
-func (u *MemoryStorage) AddRequestsCount(id int64) int {
+func (u *MemoryStorage) AddRequestsCount(id int64) (int, error) {
 	currentData := u.data[id]
 	currentData.RequestsNum++
 	u.data[id] = currentData
-	return currentData.RequestsNum
+	return currentData.RequestsNum, nil
 }

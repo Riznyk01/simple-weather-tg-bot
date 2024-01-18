@@ -35,22 +35,13 @@ func NewOpenWeatherMap(repo *repository.Repository, cfg *config.Config, log *log
 }
 
 func (OW *OpenWeatherMapService) SetSystem(chatId int64, system bool) error {
-	if err := OW.repo.SetSystem(chatId, system); err != nil {
-		return err
-	}
-	return nil
+	return OW.repo.SetSystem(chatId, system)
 }
 func (OW *OpenWeatherMapService) SetCity(chatId int64, city string) error {
-	if err := OW.repo.SetCity(chatId, city); err != nil {
-		return err
-	}
-	return nil
+	return OW.repo.SetCity(chatId, city)
 }
 func (OW *OpenWeatherMapService) SetLocation(chatId int64, lat, lon string) error {
-	if err := OW.repo.SetLocation(chatId, lat, lon); err != nil {
-		return err
-	}
-	return nil
+	return OW.repo.SetLocation(chatId, lat, lon)
 }
 func (OW *OpenWeatherMapService) GetSystem(chatId int64) (bool, error) {
 	return OW.repo.GetSystem(chatId)
@@ -67,10 +58,17 @@ func (OW *OpenWeatherMapService) Exists(chatId int64) (bool, error) {
 
 // Returns a complete weather message and sets last weather responce.
 func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
+	fc := "SetLast"
+
 	weatherUrl := OW.cfg.WeatherApiUrl
 	var cityIdString string
 	var weatherData types.WeatherCurrent
 	var forecastData types.WeatherForecast
+	var errorResponse struct {
+		Cod     string `json:"cod"`
+		Message string `json:"message"`
+	}
+
 	if weatherCommand == types.CommandCurrent || weatherCommand == types.CommandCurrentLocation {
 		weatherUrl += "weather?"
 	} else if weatherCommand == types.CommandForecast || weatherCommand == types.CommandForecastLocation {
@@ -108,17 +106,18 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	q.Add("appid", OW.cfg.WToken)
 	metric, err := OW.repo.GetSystem(chatId)
 	if err != nil {
-		OW.log.Info("Encountered an error when trying to fetch the users system of measurement:", err)
+		OW.log.Error("Encountered an error when trying to fetch the users system of measurement:", err)
 	}
 	if metric {
 		q.Add("units", "metric")
 	}
 	u.RawQuery = q.Encode()
 
-	OW.log.Debug("url.Values:", q)
-	OW.log.Debug("weather response url:", u.String())
+	OW.log.Debug(fc, " url.Values:", q)
+	OW.log.Debug(fc, " weather resp.url:", u.String())
 	resp, err := http.Get(u.String())
 	if err != nil {
+		OW.log.Error(fc, ": ", err)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -129,26 +128,25 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	}
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			var errorResponse struct {
-				Cod     string `json:"cod"`
-				Message string `json:"message"`
-			}
 			err = json.Unmarshal(body, &errorResponse)
 			if err == nil {
 				return "", fmt.Errorf("%s", tryAnother)
 			}
 		}
+		OW.log.Error(failed, resp.StatusCode)
 		return "", fmt.Errorf(failed, "%d", resp.StatusCode)
 	}
 	if weatherCommand == types.CommandCurrent || weatherCommand == types.CommandCurrentLocation {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
+			OW.log.Error(err)
 			return "", err
 		}
 		weatherMessage, cityIdString = messageCurrentWeather(weatherData, metric)
 	} else if weatherCommand == types.CommandForecast || weatherCommand == types.CommandForecastLocation {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
+			OW.log.Error(err)
 			return "", err
 		}
 		weatherMessage, cityIdString = messageForecastWeather(forecastData, metric)
@@ -160,6 +158,7 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	}
 	return weatherMessage + more, nil
 }
+
 func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, err error) {
 	ex, err := OW.repo.Exists(chatId)
 	if err != nil {
@@ -178,7 +177,7 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 	}
 	return weatherMessage, nil
 }
-func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) int {
+func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) (int, error) {
 	return OW.repo.AddRequestsCount(chatId)
 }
 
