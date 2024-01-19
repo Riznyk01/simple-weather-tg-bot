@@ -10,23 +10,14 @@ type WeatherControl interface {
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
 	AddRequestsCount(id int64) (int, error)
-	SetRepliedUserId(chatId, replId int64) error
-	GetRepliedUserId(userId int64) (int64, error)
-}
-
-type UserControl interface {
-	BanUser(id int64) error
-	UnbanUser(id int64) error
 }
 
 type Repository struct {
 	WeatherControl
-	UserControl
 }
 
 func NewRepository(memoryStor *MemoryStorage) *Repository {
 	return &Repository{
 		WeatherControl: NewWeatherControlMemoryStorage(memoryStor),
-		UserControl:    NewUserControlMemoryStorage(memoryStor),
 	}
 }

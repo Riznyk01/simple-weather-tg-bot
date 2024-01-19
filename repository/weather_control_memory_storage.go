@@ -87,18 +87,3 @@ func (u *WeatherControlMemoryStorage) AddRequestsCount(id int64) (int, error) {
 	u.memoryStor.data[id] = currentData
 	return currentData.RequestsNum, nil
 }
-
-func (u *WeatherControlMemoryStorage) GetRepliedUserId(id int64) (int64, error) {
-	data, ok := u.memoryStor.data[id]
-	if !ok {
-		return 0, errors.New("the item is empty")
-	}
-	return data.RepliedUserId, nil
-}
-
-func (u *WeatherControlMemoryStorage) SetRepliedUserId(chatId, replId int64) error {
-	currentData := u.memoryStor.data[chatId]
-	currentData.RepliedUserId = replId
-	u.memoryStor.data[chatId] = currentData
-	return nil
-}

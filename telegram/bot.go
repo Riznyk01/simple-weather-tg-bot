@@ -1,7 +1,6 @@
 package telegram
 
 import (
-	"SimpleWeatherTgBot/admin"
 	"SimpleWeatherTgBot/config"
 	"SimpleWeatherTgBot/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -12,17 +11,14 @@ type Bot struct {
 	bot            *tgbotapi.BotAPI
 	log            *logrus.Logger
 	weatherService *weather_service.WeatherService
-	adminService   *admin.AdminService
 	cfg            *config.Config
 }
 
-func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather_service.WeatherService,
-	cfg *config.Config, adminService *admin.AdminService) *Bot {
+func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather_service.WeatherService, cfg *config.Config) *Bot {
 	return &Bot{
 		bot:            bot,
 		log:            log,
 		weatherService: weatherService,
-		adminService:   adminService,
 		cfg:            cfg,
 	}
 }

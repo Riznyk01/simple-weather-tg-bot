@@ -152,7 +152,6 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	}
 	return weatherMessage + more, nil
 }
-
 func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, err error) {
 	weatherCommand, err := OW.repo.GetLast(chatId)
 	if err != nil {
@@ -166,13 +165,6 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 }
 func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) (int, error) {
 	return OW.repo.AddRequestsCount(chatId)
-}
-
-func (OW *OpenWeatherMapService) SetRepliedUserId(chatId, replId int64) error {
-	return OW.repo.SetRepliedUserId(chatId, replId)
-}
-func (OW *OpenWeatherMapService) GetRepliedUserId(chatId int64) (int64, error) {
-	return OW.repo.GetRepliedUserId(chatId)
 }
 
 // Returns units based on the metric system.

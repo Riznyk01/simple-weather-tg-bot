@@ -9,7 +9,6 @@ type Config struct {
 	LogType       string
 	BotDebug      bool
 	WeatherApiUrl string
-	AdmPass       string
 }
 
 func NewConfig() *Config {
@@ -21,7 +20,6 @@ func NewConfig() *Config {
 		LogType:       os.Getenv("TYPE_OF_LOG"),
 		BotDebug:      DebugStrToBool(os.Getenv("BOT_DEBUG")),
 		WeatherApiUrl: os.Getenv("WEATHER_API_URL"),
-		AdmPass:       os.Getenv("BOT_ADMIN_PASSWORD"),
 	}
 }
 func DebugStrToBool(envDebugVar string) bool {

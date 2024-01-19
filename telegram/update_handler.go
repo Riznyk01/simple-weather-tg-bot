@@ -11,8 +11,6 @@ var ErrLastEmpty = errors.New("the item is empty")
 
 func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 	switch {
-	case update.Message != nil && update.Message.ForwardFrom != nil:
-		b.handleReply(update)
 	case update.Message != nil && update.Message.Location == nil:
 		//When user sends command or cityname
 		b.handleTextMessage(update)
@@ -57,10 +55,6 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 		b.SendMessage(chatId, greet)
 	case types.CommandHelp:
 		b.SendMessage(chatId, types.HelpMessage)
-	case types.CommandBan:
-		//
-	case types.CommandUnBan:
-		//
 	default:
 		err := b.weatherService.WeatherControl.SetCity(chatId, update.Message.Text)
 		if err != nil {
@@ -72,15 +66,6 @@ func (b *Bot) handleTextMessage(update tgbotapi.Update) {
 			b.log.Error(err)
 		}
 	}
-}
-
-func (b *Bot) handleReply(update tgbotapi.Update) {
-	fc := "handleReply"
-	chatId := update.Message.Chat.ID
-	b.infoLogger(fc, chatId, update)
-	b.weatherService.SetRepliedUserId(update.Message.Chat.ID, update.Message.ForwardFrom.ID)
-	replId, _ := b.weatherService.GetRepliedUserId(update.Message.Chat.ID)
-	b.SendMessage(chatId, fmt.Sprintf("%v", replId))
 }
 
 // handleLocationMessage processes location messages from users.
