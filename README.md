@@ -62,14 +62,17 @@ sudo docker build -t simple-weather-tg-bot .
 ## Usage
 Run the Docker container:
 ```bash
-sudo docker run -d simple-weather-tg-bot
+sudo docker run -p 8080:8080 \
+    -e BOT_DEBUG=false \ # (true or false) debug mode of telegram-bot-api
+    -e BOT_TOKEN= \ #YOUR_BOT_TOKEN
+    -e LOG_LEVEL= \ #panic/fatal/error/warn/warning/info/debug/trace
+    -e TYPE_OF_LOG= \ #JSONLOG or TEXTLOG
+    -e WEATHER_API_URL=https://api.openweathermap.org/data/2.5/ \
+    -e WEATHER_TOKEN= \ #YOUR_OPENWEATHERMAP_API_KEY
+    simple-weather-tg-bot:latest
 ```
 
-Check the running containers:
 
-```bash
-sudo docker ps
-```
 ## Bot Commands
 /start: sends a welcome message and instructions to the user.  
 /help: provides information on how to use the bot.  
