@@ -1,20 +1,23 @@
-# Base image for Go
+# Use the official Golang image as the base image
 FROM golang:1.21
 
-# Create a directory
-RUN mkdir /app
-
-# Copy files into the app directory
-ADD . /app/
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Get dependencies
-RUN go get -d
+# Copy go.mod and go.sum files to the working directory
+COPY go.mod go.sum ./
+
+# Download and cache dependencies
+RUN go mod download
+
+# Copy the local package files to the container's working directory
+COPY . .
 
 # Build the application
-RUN go build -o main .
+RUN go build -o /app/main ./cmd
 
-# Run the bot
-CMD ["/app/main"]
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./main"]
