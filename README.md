@@ -29,11 +29,12 @@ Here are some screenshots of the bot in action:
 
 Before running the bot, make sure to set the following environment variables:
 
-BOT_TOKEN=YOUR_BOT_TOKEN  
-WEATHER_TOKEN=YOUR_OPENWEATHERMAP_API_KEY  
-LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace)  
-TYPE_OF_LOG=(JSONLOG or TEXTLOG)
-WEATHER_API_URL=https://api.openweathermap.org/data/2.5/  
+BOT_DEBUG=(true or false): "Enable/disable debug mode of the Telegram Bot API."  
+BOT_TOKEN=YOUR_BOT_TOKEN: "Your Telegram Bot Token."  
+LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace): "Sets the log level."  
+TYPE_OF_LOG=(JSONLOG or TEXTLOG): "Choose between JSON or text log format."    
+WEATHER_API_URL=https://api.openweathermap.org/data/2.5/: "OpenWeatherMap API URL."  
+WEATHER_TOKEN=YOUR_OPENWEATHERMAP_API_KEY: "Your OpenWeatherMap API Key."  
 
 Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by creating a new bot on Telegram. Follow these steps:
 
@@ -63,12 +64,12 @@ sudo docker build -t simple-weather-tg-bot .
 Run the Docker container:
 ```bash
 sudo docker run -p 8080:8080 \
-    -e BOT_DEBUG=false \ # (true or false) debug mode of telegram-bot-api
-    -e BOT_TOKEN= \ #YOUR_BOT_TOKEN
-    -e LOG_LEVEL= \ #panic/fatal/error/warn/warning/info/debug/trace
-    -e TYPE_OF_LOG= \ #JSONLOG or TEXTLOG
+    -e BOT_DEBUG=... \
+    -e BOT_TOKEN=... \
+    -e LOG_LEVEL=... \
+    -e TYPE_OF_LOG=... \
     -e WEATHER_API_URL=https://api.openweathermap.org/data/2.5/ \
-    -e WEATHER_TOKEN= \ #YOUR_OPENWEATHERMAP_API_KEY
+    -e WEATHER_TOKEN=... \
     simple-weather-tg-bot:latest
 ```
 
