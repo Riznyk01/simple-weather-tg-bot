@@ -10,38 +10,39 @@ import (
 var ErrLastEmpty = errors.New("the item is empty")
 
 func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
+	b.infoLogger(update)
 	switch {
 	case update.Message != nil && update.Message.IsCommand(): //When user sends command
-		b.infoLogger(update.Message.Chat.ID, update)
 		b.handleCommand(update.Message, update.SentFrom().FirstName)
 	case update.Message != nil && update.Message.Location != nil: //When user sends location
-		b.infoLogger(update.Message.Chat.ID, update)
 		b.handleLocation(update.Message)
 	case update.CallbackQuery != nil: //When user choose forecast type or the "repeat last" command
-		b.infoLogger(update.CallbackQuery.Message.Chat.ID, update)
 		b.handleCallbackQuery(update.CallbackQuery, update.SentFrom().FirstName)
 	default: //When user sends cityname
-		b.infoLogger(update.Message.Chat.ID, update)
 		b.handleText(update.Message)
 	}
 }
 
-func (b *Bot) infoLogger(chatId int64, update tgbotapi.Update) {
+func (b *Bot) infoLogger(update tgbotapi.Update) {
+	var action string
+	var chatId int64
+	switch {
+	case update.CallbackQuery != nil:
+		action = fmt.Sprintf(" callback: %s", update.CallbackQuery.Data)
+		chatId = update.CallbackQuery.Message.Chat.ID
+	case update.Message != nil:
+		action = fmt.Sprintf(" message: %s", update.Message.Text)
+		chatId = update.Message.Chat.ID
+	case update.Message.Location != nil:
+		action = fmt.Sprintf(" location: %v", update.Message.Location)
+		chatId = update.Message.Chat.ID
+	}
 	RequestsCount, err := b.weatherService.AddRequestsCount(chatId)
 	if err != nil {
 		b.log.Error(err)
 	}
-	var action string
-	switch {
-	case update.CallbackQuery != nil:
-		action = fmt.Sprintf(" callback: %s", update.CallbackQuery.Data)
-	case update.Message != nil:
-		action = fmt.Sprintf(" message: %s", update.Message.Text)
-	case update.Message.Location != nil:
-		action = fmt.Sprintf(" location: %v", update.Message.Location)
-	}
-	b.log.Debug("ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
-		" @", update.SentFrom().UserName, " req.count: ", RequestsCount, action)
+	b.log.Debugf("ID: %d %s %s @%s req.count: %d %s", chatId, update.SentFrom().FirstName,
+		update.SentFrom().LastName, update.SentFrom().UserName, RequestsCount, action)
 }
 
 // handleCommand processes command from users.
