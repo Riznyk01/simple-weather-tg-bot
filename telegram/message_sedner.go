@@ -23,7 +23,7 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons .
 
 // Sends inline keyboard when requests for weather_service type is reported after the location is sent.
 func (b *Bot) SendLocationOptions(chatID int64, latStr, lonStr string) error {
-	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, types.ChooseOptionMessage)
+	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, types.MessageChooseOption)
 	err := b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, types.CommandCurrentLocation, types.CommandForecastLocation)
 	if err != nil {
 		return err

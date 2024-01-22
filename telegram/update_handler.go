@@ -11,115 +11,22 @@ var ErrLastEmpty = errors.New("the item is empty")
 
 func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 	switch {
-	case update.Message != nil && update.Message.Location == nil:
-		//When user sends command or cityname
-		b.handleTextMessage(update)
-	case update.Message != nil && update.Message.Location != nil:
-		//When user sends location
-		b.handleLocationMessage(update)
-	case update.Message == nil && update.CallbackQuery != nil:
-		if update.CallbackQuery.Data != types.CommandLast {
-			//When user choose forecast type
-			b.handleCallbackQuery(update)
-		} else {
-			//When user choose last forecast
-			b.handleCallbackQueryLast(update)
-		}
+	case update.Message != nil && update.Message.IsCommand(): //When user sends command
+		b.infoLogger(update.Message.Chat.ID, update)
+		b.handleCommand(update.Message, update.SentFrom().FirstName)
+	case update.Message != nil && update.Message.Location != nil: //When user sends location
+		b.infoLogger(update.Message.Chat.ID, update)
+		b.handleLocation(update.Message)
+	case update.CallbackQuery != nil: //When user choose forecast type or the "repeat last" command
+		b.infoLogger(update.CallbackQuery.Message.Chat.ID, update)
+		b.handleCallbackQuery(update.CallbackQuery, update.SentFrom().FirstName)
+	default: //When user sends cityname
+		b.infoLogger(update.Message.Chat.ID, update)
+		b.handleText(update.Message)
 	}
 }
 
-// handleTextMessage processes text messages and commands from users.
-func (b *Bot) handleTextMessage(update tgbotapi.Update) {
-	fc := "handleTextMessage"
-	chatId := update.Message.Chat.ID
-	b.infoLogger(fc, chatId, update)
-
-	switch update.Message.Text {
-	case types.CommandMetricUnits:
-		err := b.weatherService.WeatherControl.SetSystem(chatId, true)
-		if err != nil {
-			b.SendMessage(chatId, types.SetUsersSystemError)
-			b.log.Error(types.SetUsersSystemError)
-		}
-		b.SendMessage(chatId, types.MetricUnitOn)
-	case types.CommandNonMetricUnits:
-		err := b.weatherService.WeatherControl.SetSystem(chatId, false)
-		if err != nil {
-			b.SendMessage(chatId, types.SetUsersSystemError)
-			b.log.Error(types.SetUsersSystemError)
-		}
-		b.SendMessage(chatId, types.MetricUnitOff)
-	case types.CommandStart:
-		n := update.SentFrom()
-		greet := fmt.Sprintf(types.WelcomeMessage, n.FirstName) + types.HelpMessage
-		b.SendMessage(chatId, greet)
-	case types.CommandHelp:
-		b.SendMessage(chatId, types.HelpMessage)
-	default:
-		err := b.weatherService.WeatherControl.SetCity(chatId, update.Message.Text)
-		if err != nil {
-			b.SendMessage(update.Message.Chat.ID, types.SetUsersCityError)
-			b.log.Error(types.SetUsersCityError)
-		}
-		err = b.SendMessageWithInlineKeyboard(chatId, types.ChooseOptionMessage, types.CommandCurrent, types.CommandForecast)
-		if err != nil {
-			b.log.Error(err)
-		}
-	}
-}
-
-// handleLocationMessage processes location messages from users.
-func (b *Bot) handleLocationMessage(update tgbotapi.Update) {
-	fc := "handleLocationMessage"
-	chatId := update.Message.Chat.ID
-	b.infoLogger(fc, chatId, update)
-	uLat, uLon := fmt.Sprintf("%f", update.Message.Location.Latitude), fmt.Sprintf("%f", update.Message.Location.Longitude)
-	err := b.weatherService.WeatherControl.SetLocation(chatId, uLat, uLon)
-	if err != nil {
-		b.log.Error(types.SetUsersLocationError)
-		b.SendMessage(chatId, types.SetUsersLocationError)
-	}
-	err = b.SendLocationOptions(chatId, uLat, uLon)
-	if err != nil {
-		b.log.Error(err)
-	}
-}
-
-// handleCallbackQuery processes callback queries from users.
-func (b *Bot) handleCallbackQuery(update tgbotapi.Update) {
-	fc := "handleCallbackQuery"
-	chatId := update.CallbackQuery.Message.Chat.ID
-	b.infoLogger(fc, chatId, update)
-	weatherCommand := update.CallbackQuery.Data
-	userMessage, err := b.weatherService.WeatherControl.SetLast(chatId, weatherCommand)
-	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
-}
-
-// handleCallbackQueryLast processes the "repeat last" callback query, sends the last weather data.
-func (b *Bot) handleCallbackQueryLast(update tgbotapi.Update) {
-	fc := "handleCallbackQueryLast"
-	chatId := update.CallbackQuery.Message.Chat.ID
-	b.infoLogger(fc, chatId, update)
-	userMessage, err := b.weatherService.WeatherControl.GetLast(chatId)
-	b.handleCallbackQueryHandlingError(update.SentFrom().FirstName, userMessage, chatId, err)
-}
-
-// handleCallbackQueryHandlingError handles errors in callback query processing.
-func (b *Bot) handleCallbackQueryHandlingError(name, userMessage string, chatId int64, err error) {
-	if errors.Is(err, ErrLastEmpty) {
-		b.SendMessage(chatId, fmt.Sprintf(types.LastDataUnavailable, name))
-	} else if err != nil {
-		b.log.Error(err)
-		b.SendMessage(chatId, err.Error())
-	} else {
-		err = b.SendMessageWithInlineKeyboard(chatId, userMessage, types.CommandLast)
-		if err != nil {
-			b.log.Error(err)
-		}
-	}
-}
-
-func (b *Bot) infoLogger(fc string, chatId int64, update tgbotapi.Update) {
+func (b *Bot) infoLogger(chatId int64, update tgbotapi.Update) {
 	RequestsCount, err := b.weatherService.AddRequestsCount(chatId)
 	if err != nil {
 		b.log.Error(err)
@@ -133,6 +40,86 @@ func (b *Bot) infoLogger(fc string, chatId int64, update tgbotapi.Update) {
 	case update.Message.Location != nil:
 		action = fmt.Sprintf(" location: %v", update.Message.Location)
 	}
-	b.log.Debug(fc, " ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
+	b.log.Debug("ID:", chatId, " ", update.SentFrom().FirstName, update.SentFrom().LastName,
 		" @", update.SentFrom().UserName, " req.count: ", RequestsCount, action)
+}
+
+// handleCommand processes command from users.
+func (b *Bot) handleCommand(message *tgbotapi.Message, fname string) {
+	fc := "handleCommand"
+
+	switch message.Text {
+	case types.CommandMetricUnits:
+		err := b.weatherService.WeatherControl.SetSystem(message.Chat.ID, true)
+		if err != nil {
+			b.SendMessage(message.Chat.ID, types.MessageSetUsersSystemError)
+			b.log.Errorf("%s: %s", fc, types.MessageSetUsersSystemError)
+		}
+		b.SendMessage(message.Chat.ID, types.MessageMetricUnitOn)
+	case types.CommandNonMetricUnits:
+		err := b.weatherService.WeatherControl.SetSystem(message.Chat.ID, false)
+		if err != nil {
+			b.SendMessage(message.Chat.ID, types.MessageSetUsersSystemError)
+			b.log.Errorf("%s: %s", fc, types.MessageSetUsersSystemError)
+		}
+		b.SendMessage(message.Chat.ID, types.MessageMetricUnitOff)
+	case types.CommandStart:
+		b.SendMessage(message.Chat.ID, fmt.Sprintf(types.MessageWelcome, fname)+types.MessageHelp)
+	case types.CommandHelp:
+		b.SendMessage(message.Chat.ID, types.MessageHelp)
+	}
+}
+
+// handleText processes text from users.
+func (b *Bot) handleText(message *tgbotapi.Message) {
+	fc := "handleText"
+
+	err := b.weatherService.WeatherControl.SetCity(message.Chat.ID, message.Text)
+	if err != nil {
+		b.SendMessage(message.Chat.ID, types.MessageSetUsersCityError)
+		b.log.Errorf("%s: %s", fc, types.MessageSetUsersCityError)
+	}
+	err = b.SendMessageWithInlineKeyboard(message.Chat.ID, types.MessageChooseOption, types.CommandCurrent, types.CommandForecast)
+	if err != nil {
+		b.log.Errorf("%s: %v", fc, err)
+	}
+}
+
+// handleLocationMessage processes location messages from users.
+func (b *Bot) handleLocation(message *tgbotapi.Message) {
+	fc := "handleLocation"
+
+	uLat, uLon := fmt.Sprintf("%f", message.Location.Latitude), fmt.Sprintf("%f", message.Location.Longitude)
+	err := b.weatherService.WeatherControl.SetLocation(message.Chat.ID, uLat, uLon)
+	if err != nil {
+		b.log.Errorf("%s: %s", fc, types.MessageSetUsersLocationError)
+		b.SendMessage(message.Chat.ID, types.MessageSetUsersLocationError)
+	}
+	err = b.SendLocationOptions(message.Chat.ID, uLat, uLon)
+	if err != nil {
+		b.log.Errorf("%s: %v", fc, err)
+	}
+}
+
+// handleCallbackQuery processes callback queries from users.
+func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery, fname string) {
+	var userMessage string
+	var err error
+	if callback.Data == types.CommandLast {
+		userMessage, err = b.weatherService.WeatherControl.GetLast(callback.Message.Chat.ID)
+	} else {
+		userMessage, err = b.weatherService.WeatherControl.SetLast(callback.Message.Chat.ID, callback.Data)
+	}
+	if err != nil {
+		if errors.Is(err, ErrLastEmpty) {
+			b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(types.MessageLastDataUnavailable, fname))
+		}
+		b.log.Error(err)
+		b.SendMessage(callback.Message.Chat.ID, err.Error())
+	} else {
+		err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, types.CommandLast)
+		if err != nil {
+			b.log.Error(err)
+		}
+	}
 }
