@@ -1,7 +1,5 @@
 package repository
 
-import "errors"
-
 type WeatherControlMemoryStorage struct {
 	memoryStor *MemoryStorage
 }
@@ -47,43 +45,33 @@ func (u *WeatherControlMemoryStorage) SetLast(id int64, last string) error {
 
 // GetSystem gets user's system of measurement.
 func (u *WeatherControlMemoryStorage) GetSystem(id int64) (bool, error) {
-	data, ok := u.memoryStor.data[id]
-	if !ok {
-		return false, errors.New("the item is empty")
-	}
+	data, _ := u.memoryStor.data[id]
 	return data.Metric, nil
 }
 
 // GetCity gets user's last city.
 func (u *WeatherControlMemoryStorage) GetCity(id int64) (string, error) {
-	data, ok := u.memoryStor.data[id]
-	if !ok {
-		return "", errors.New("the item is empty")
+	data, _ := u.memoryStor.data[id]
+	if data.City == "" {
+		return "", ErrItemIsEmpty
 	}
 	return data.City, nil
 }
 
 // GetLocation gets user's last location.
 func (u *WeatherControlMemoryStorage) GetLocation(id int64) (string, string, error) {
-	data, ok := u.memoryStor.data[id]
-	if !ok {
-		return "", "", errors.New("the item is empty")
+	data, _ := u.memoryStor.data[id]
+	if data.Lat == "" && data.Lon == "" {
+		return "", "", ErrItemIsEmpty
 	}
 	return data.Lat, data.Lon, nil
 }
 
 // GetLast gets user's last weather forecast.
 func (u *WeatherControlMemoryStorage) GetLast(id int64) (string, error) {
-	data, ok := u.memoryStor.data[id]
-	if !ok {
-		return "", errors.New("the item is empty")
+	data, _ := u.memoryStor.data[id]
+	if data.Last == "" {
+		return "", ErrItemIsEmpty
 	}
 	return data.Last, nil
-}
-
-func (u *WeatherControlMemoryStorage) AddRequestsCount(id int64) (int, error) {
-	currentData := u.memoryStor.data[id]
-	currentData.RequestsNum++
-	u.memoryStor.data[id] = currentData
-	return currentData.RequestsNum, nil
 }

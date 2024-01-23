@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	moreInfoURLFormat = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
-	failed            = "Failed to get weather data. Status code:"
-	tryAnother        = "Please try another city name, or try sending the location."
+	moreInfoURLFormat  = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
+	failedToGetWeather = "Failed to get weather data. Status code:"
+	tryAnother         = "Please try another city name, or try sending the location."
 )
 
 type OpenWeatherMapService struct {
@@ -66,9 +66,9 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 		Message string `json:"message"`
 	}
 
-	if weatherCommand == types.CommandCurrent || weatherCommand == types.CommandCurrentLocation {
+	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackCurrentLocation {
 		weatherUrl += "weather?"
-	} else if weatherCommand == types.CommandForecast || weatherCommand == types.CommandForecastLocation {
+	} else if weatherCommand == types.CallbackForecast || weatherCommand == types.CallbackForecastLocation {
 		weatherUrl += "forecast?"
 	}
 
@@ -79,16 +79,13 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 
 	q := url.Values{}
 
-	if weatherCommand == types.CommandCurrent || weatherCommand == types.CommandForecast {
+	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackForecast {
 		city, err := OW.repo.GetCity(chatId)
 		if err != nil {
 			return "", err
 		}
-		if city == "" {
-			return "empty", err
-		}
 		q.Add("q", city)
-	} else if weatherCommand == types.CommandForecastLocation || weatherCommand == types.CommandCurrentLocation {
+	} else if weatherCommand == types.CallbackForecastLocation || weatherCommand == types.CallbackCurrentLocation {
 		lat, lon, err := OW.repo.GetLocation(chatId)
 		if err != nil {
 			return "", err
@@ -127,17 +124,17 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 				return "", fmt.Errorf("%s", tryAnother)
 			}
 		}
-		OW.log.Error(failed, resp.StatusCode)
-		return "", fmt.Errorf(failed, "%d", resp.StatusCode)
+		OW.log.Error(failedToGetWeather, resp.StatusCode)
+		return "", fmt.Errorf(failedToGetWeather, "%d", resp.StatusCode)
 	}
-	if weatherCommand == types.CommandCurrent || weatherCommand == types.CommandCurrentLocation {
+	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackCurrentLocation {
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
 			OW.log.Error(err)
 			return "", err
 		}
 		weatherMessage, cityIdString = messageCurrentWeather(weatherData, metric)
-	} else if weatherCommand == types.CommandForecast || weatherCommand == types.CommandForecastLocation {
+	} else if weatherCommand == types.CallbackForecast || weatherCommand == types.CallbackForecastLocation {
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
 			OW.log.Error(err)
@@ -162,9 +159,6 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 		return weatherMessage, err
 	}
 	return weatherMessage, nil
-}
-func (OW *OpenWeatherMapService) AddRequestsCount(chatId int64) (int, error) {
-	return OW.repo.AddRequestsCount(chatId)
 }
 
 // Returns units based on the metric system.

@@ -1,16 +1,15 @@
 package telegram
 
 import (
+	"SimpleWeatherTgBot/repository"
 	"SimpleWeatherTgBot/types"
 	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var ErrLastEmpty = errors.New("the item is empty")
-
 func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
-	b.infoLogger(update)
+	b.log.Debug(update)
 	switch {
 	case update.Message != nil && update.Message.IsCommand(): //When user sends command
 		b.handleCommand(update.Message, update.SentFrom().FirstName)
@@ -21,28 +20,6 @@ func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 	default: //When user sends cityname
 		b.handleText(update.Message)
 	}
-}
-
-func (b *Bot) infoLogger(update tgbotapi.Update) {
-	var action string
-	var chatId int64
-	switch {
-	case update.CallbackQuery != nil:
-		action = fmt.Sprintf(" callback: %s", update.CallbackQuery.Data)
-		chatId = update.CallbackQuery.Message.Chat.ID
-	case update.Message != nil:
-		action = fmt.Sprintf(" message: %s", update.Message.Text)
-		chatId = update.Message.Chat.ID
-	case update.Message.Location != nil:
-		action = fmt.Sprintf(" location: %v", update.Message.Location)
-		chatId = update.Message.Chat.ID
-	}
-	RequestsCount, err := b.weatherService.AddRequestsCount(chatId)
-	if err != nil {
-		b.log.Error(err)
-	}
-	b.log.Debugf("ID: %d %s %s @%s req.count: %d %s", chatId, update.SentFrom().FirstName,
-		update.SentFrom().LastName, update.SentFrom().UserName, RequestsCount, action)
 }
 
 // handleCommand processes command from users.
@@ -80,7 +57,7 @@ func (b *Bot) handleText(message *tgbotapi.Message) {
 		b.SendMessage(message.Chat.ID, types.MessageSetUsersCityError)
 		b.log.Errorf("%s: %s", fc, types.MessageSetUsersCityError)
 	}
-	err = b.SendMessageWithInlineKeyboard(message.Chat.ID, types.MessageChooseOption, types.CommandCurrent, types.CommandForecast)
+	err = b.SendMessageWithInlineKeyboard(message.Chat.ID, types.MessageChooseOption, types.CallbackCurrent, types.CallbackForecast)
 	if err != nil {
 		b.log.Errorf("%s: %v", fc, err)
 	}
@@ -106,19 +83,20 @@ func (b *Bot) handleLocation(message *tgbotapi.Message) {
 func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery, fname string) {
 	var userMessage string
 	var err error
-	if callback.Data == types.CommandLast {
+	if callback.Data == types.CallbackLast {
 		userMessage, err = b.weatherService.WeatherControl.GetLast(callback.Message.Chat.ID)
 	} else {
 		userMessage, err = b.weatherService.WeatherControl.SetLast(callback.Message.Chat.ID, callback.Data)
 	}
 	if err != nil {
-		if errors.Is(err, ErrLastEmpty) {
+		if errors.Is(err, repository.ErrItemIsEmpty) {
 			b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(types.MessageLastDataUnavailable, fname))
+		} else {
+			b.log.Error(err)
+			b.SendMessage(callback.Message.Chat.ID, err.Error())
 		}
-		b.log.Error(err)
-		b.SendMessage(callback.Message.Chat.ID, err.Error())
 	} else {
-		err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, types.CommandLast)
+		err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, types.CallbackLast)
 		if err != nil {
 			b.log.Error(err)
 		}

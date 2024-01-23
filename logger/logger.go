@@ -6,9 +6,7 @@ import (
 )
 
 func SetupLogger() *logrus.Logger {
-	//panic, fatal, error, warn, warning, info, debug, trace
 	log := logrus.New()
-
 	logLevel, err := logrus.ParseLevel(os.Getenv("LOG_LEVEL"))
 	if err != nil {
 		log.Fatal(err)

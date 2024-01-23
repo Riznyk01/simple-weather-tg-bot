@@ -1,13 +1,13 @@
 package types
 
 const (
-	CommandStart            = "/start"
-	CommandHelp             = "/help"
-	CommandLast             = "repeat last"
-	CommandCurrent          = "current"
-	CommandForecast         = "5-days forecast"
-	CommandForecastLocation = "5-days forecast 📍"
-	CommandCurrentLocation  = "current 📍"
-	CommandMetricUnits      = "/metric"
-	CommandNonMetricUnits   = "/nonmetric"
+	CommandStart             = "/start"
+	CommandHelp              = "/help"
+	CommandMetricUnits       = "/metric"
+	CommandNonMetricUnits    = "/nonmetric"
+	CallbackLast             = "repeat last"
+	CallbackCurrent          = "current"
+	CallbackCurrentLocation  = "current 📍"
+	CallbackForecast         = "5-days forecast"
+	CallbackForecastLocation = "5-days forecast 📍"
 )

@@ -15,7 +15,6 @@ type WeatherControl interface {
 	GetCity(id int64) (string, error)
 	GetLocation(id int64) (string, string, error)
 	GetLast(id int64) (string, error)
-	AddRequestsCount(id int64) (int, error)
 }
 
 type WeatherService struct {
