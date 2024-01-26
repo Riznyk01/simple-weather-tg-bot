@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"math"
@@ -6,12 +6,12 @@ import (
 )
 
 // PressureConverting converting pressure to HPaToInHg.
-func PressureConverting(hPa float64, metric bool) float64 {
+func PressureConverting(hPa int, metric bool) int {
 	if metric {
 		//HPaToMmHg
-		return hPa * 0.750061561303
+		return int(float64(hPa) * 0.750061561303)
 	}
-	return hPa * 0.0295299830714
+	return int(float64(hPa) * 0.0295299830714)
 }
 
 // TimeStampToInfo converts a Unix timestamp to specific information based on the provided info type.

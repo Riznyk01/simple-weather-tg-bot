@@ -2,9 +2,9 @@ package weather_service
 
 import (
 	"SimpleWeatherTgBot/config"
-	"SimpleWeatherTgBot/repository"
-	"SimpleWeatherTgBot/types"
-	"SimpleWeatherTgBot/utils"
+	"SimpleWeatherTgBot/internal/model"
+	"SimpleWeatherTgBot/internal/repository"
+	"SimpleWeatherTgBot/internal/weather_service/util"
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -16,8 +16,9 @@ import (
 
 const (
 	moreInfoURLFormat  = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
-	failedToGetWeather = "Failed to get weather data. Status code:"
+	failedToGetWeather = "Failed to get weather data:"
 	tryAnother         = "Please try another city name, or try sending the location."
+	systemFetchError   = "Encountered an error when trying to fetch the users system of measurement:"
 )
 
 type OpenWeatherMapService struct {
@@ -53,22 +54,20 @@ func (OW *OpenWeatherMapService) GetLocation(chatId int64) (string, string, erro
 	return OW.repo.GetLocation(chatId)
 }
 
-// Returns a complete weather message and sets last weather responce.
+// SetLast returns a complete weather message and sets last weather responce.
 func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
 	fc := "SetLast"
 
 	weatherUrl := OW.cfg.WeatherApiUrl
-	var cityIdString string
-	var weatherData types.WeatherCurrent
-	var forecastData types.WeatherForecast
-	var errorResponse struct {
-		Cod     string `json:"cod"`
-		Message string `json:"message"`
-	}
+	var cityId string
+	var weatherData model.WeatherCurrent
+	var forecastData model.WeatherForecast
+	var errResponse model.ErrorResponse
 
-	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackCurrentLocation {
+	switch weatherCommand {
+	case model.CallbackCurrent, model.CallbackCurrentLocation:
 		weatherUrl += "weather?"
-	} else if weatherCommand == types.CallbackForecast || weatherCommand == types.CallbackForecastLocation {
+	case model.CallbackForecast, model.CallbackForecastLocation:
 		weatherUrl += "forecast?"
 	}
 
@@ -79,13 +78,14 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 
 	q := url.Values{}
 
-	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackForecast {
+	switch weatherCommand {
+	case model.CallbackCurrent, model.CallbackForecast:
 		city, err := OW.repo.GetCity(chatId)
 		if err != nil {
 			return "", err
 		}
 		q.Add("q", city)
-	} else if weatherCommand == types.CallbackForecastLocation || weatherCommand == types.CallbackCurrentLocation {
+	case model.CallbackForecastLocation, model.CallbackCurrentLocation:
 		lat, lon, err := OW.repo.GetLocation(chatId)
 		if err != nil {
 			return "", err
@@ -97,7 +97,7 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	q.Add("appid", OW.cfg.WToken)
 	metric, err := OW.repo.GetSystem(chatId)
 	if err != nil {
-		OW.log.Error("Encountered an error when trying to fetch the users system of measurement:", err)
+		OW.log.Error(systemFetchError, err)
 	}
 	if metric {
 		q.Add("units", "metric")
@@ -119,35 +119,38 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 	}
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			err = json.Unmarshal(body, &errorResponse)
+			err = json.Unmarshal(body, &errResponse)
 			if err == nil {
+				OW.log.Error(errResponse)
 				return "", fmt.Errorf("%s", tryAnother)
 			}
 		}
 		OW.log.Error(failedToGetWeather, resp.StatusCode)
 		return "", fmt.Errorf(failedToGetWeather, "%d", resp.StatusCode)
 	}
-	if weatherCommand == types.CallbackCurrent || weatherCommand == types.CallbackCurrentLocation {
+
+	switch weatherCommand {
+	case model.CallbackCurrent, model.CallbackCurrentLocation:
 		err = json.Unmarshal(body, &weatherData)
 		if err != nil {
 			OW.log.Error(err)
 			return "", err
 		}
-		weatherMessage, cityIdString = messageCurrentWeather(weatherData, metric)
-	} else if weatherCommand == types.CallbackForecast || weatherCommand == types.CallbackForecastLocation {
+		weatherMessage, cityId = messageCurrentWeather(weatherData, metric)
+	case model.CallbackForecast, model.CallbackForecastLocation:
 		err = json.Unmarshal(body, &forecastData)
 		if err != nil {
 			OW.log.Error(err)
 			return "", err
 		}
-		weatherMessage, cityIdString = messageForecastWeather(forecastData, metric)
+		weatherMessage, cityId = messageForecastWeather(forecastData, metric)
 	}
-	more := fmt.Sprintf(moreInfoURLFormat, cityIdString)
+
 	err = OW.repo.SetLast(chatId, weatherCommand)
 	if err != nil {
 		return "", err
 	}
-	return weatherMessage + more, nil
+	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
 }
 func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, err error) {
 	weatherCommand, err := OW.repo.GetLast(chatId)
@@ -161,7 +164,7 @@ func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, e
 	return weatherMessage, nil
 }
 
-// Returns units based on the metric system.
+// units returns units based on the metric system.
 func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
 	if metricUnits {
 		return "°C", "m/s", "mmHg"
@@ -169,77 +172,80 @@ func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
 	return "°F", "mph", "inHg"
 }
 
-// Returns a message with current weather and city id (in string).
-func messageCurrentWeather(weatherData types.WeatherCurrent, metric bool) (userMessageCurrent, cityIdStr string) {
+// messageCurrentWeather returns a message with current weather and city id (in string).
+func messageCurrentWeather(currentData model.WeatherCurrent, metric bool) (userMessageCurrent, cityId string) {
 	tUnits, wUnits, pUnits := units(metric)
-	pressure := utils.PressureConverting(float64(weatherData.Main.Pressure), metric)
-	windSpeed := weatherData.Wind.Speed
+	pressure := util.PressureConverting(currentData.Main.Pressure, metric)
+	windSpeed := currentData.Wind.Speed
 	//Converting to miles per hour if non-metric
 	if !metric {
-		windSpeed = utils.ToMilesPerHour(weatherData.Wind.Speed)
-		pressure = utils.PressureConverting(float64(weatherData.Main.Pressure), metric)
+		windSpeed = util.ToMilesPerHour(currentData.Wind.Speed)
+		pressure = util.PressureConverting(currentData.Main.Pressure, metric)
 	}
-	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%.0f %s %.2f%s %s \n\n🌅  %s 🌉  %s",
-		weatherData.Sys.Country,
-		weatherData.Name,
-		utils.ReplaceWeatherPlusIcons(weatherData.Weather[0].Description),
-		utils.TemperatureConverting(weatherData.Main.Temp, metric),
+	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%d %s %.2f%s %s \n\n🌅  %s 🌉  %s",
+		currentData.Sys.Country,
+		currentData.Name,
+		util.WeatherTextToIcon(currentData.Weather[0].Description, true),
+		util.TemperatureConverting(currentData.Main.Temp, metric),
 		tUnits,
-		utils.TemperatureConverting(weatherData.Main.FeelsLike, metric),
+		util.TemperatureConverting(currentData.Main.FeelsLike, metric),
 		tUnits,
-		weatherData.Main.Humidity,
-		utils.TemperatureConverting(weatherData.Main.TempMin, metric),
+		currentData.Main.Humidity,
+		util.TemperatureConverting(currentData.Main.TempMin, metric),
 		tUnits,
-		utils.TemperatureConverting(weatherData.Main.TempMax, metric),
+		util.TemperatureConverting(currentData.Main.TempMax, metric),
 		tUnits,
 		pressure,
 		pUnits,
 		windSpeed,
 		wUnits,
-		utils.DegreesToDirectionIcon(weatherData.Wind.Deg),
-		utils.TimeStampToHuman(weatherData.Sys.Sunrise, weatherData.Timezone, "15:04"),
-		utils.TimeStampToHuman(weatherData.Sys.Sunset, weatherData.Timezone, "15:04"))
+		util.DegreesToDirectionIcon(currentData.Wind.Deg),
+		util.TimeStampToHuman(currentData.Sys.Sunrise, currentData.Timezone, "15:04"),
+		util.TimeStampToHuman(currentData.Sys.Sunset, currentData.Timezone, "15:04"))
 
-	return userMessageCurrent, strconv.Itoa(weatherData.ID)
+	return userMessageCurrent, strconv.Itoa(currentData.ID)
 }
 
-// Returns a message with weather forecast and city id (in string).
-func messageForecastWeather(forecastData types.WeatherForecast, metric bool) (message, cityIdStr string) {
+// messageForecastWeather returns a message with weather forecast and city id (in string).
+func messageForecastWeather(forecastData model.WeatherForecast, metric bool) (message, cityIdStr string) {
 	tUnits, wUnits, pUnits := units(metric)
 	// Creating a string to display the country and city names
 	message = fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
 	// Constructing the date display, including day, month, and day of the week,
 	// to be inserted into the user message about the weather.
-	message += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", utils.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"), utils.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
-	messageHeader := fmt.Sprintf("[h:m] [---] [%s] [%s] [%s] [%s]\n",
-		tUnits, "%", pUnits, wUnits)
+	message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
+		util.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"),
+		util.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"),
+		util.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
+	messageHeader := fmt.Sprintf("[time] [   ] [%s] [%s] [%s] [%s, dir.]\n",
+		tUnits, "💧", pUnits, wUnits)
 	message += messageHeader
 
 	for ind, entry := range forecastData.List {
-		hours := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
-		dayNum := utils.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
-		dayOfWeek := utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "d")
+		hours := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
+		dayNum := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
+		dayOfWeek := util.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "d")
 		if hours == "01" || hours == "02" && ind > 0 {
 			// Constructing the date display, including day, month, and day of the week,
 			// to be inserted into the user message about the weather.
-			message += fmt.Sprintf("<b>🗓%s %s (%s)</b>\n", dayNum, utils.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
+			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n", dayNum, util.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
 			message += messageHeader
 		}
 
 		windSpeedForecast := entry.Wind.Speed
 		// Converting to miles per hour if non-metric
 		if !metric {
-			windSpeedForecast = utils.ToMilesPerHour(entry.Wind.Speed)
+			windSpeedForecast = util.ToMilesPerHour(entry.Wind.Speed)
 		}
 
-		message += fmt.Sprintf("%s %s %+d %d%% %.1f %.1f %s\n",
+		message += fmt.Sprintf("%s %s %+d %d%% %d [%.1f %s]\n",
 			hours+":00",
-			utils.ReplaceWeatherToIcons(entry.Weather[0].Description),
-			utils.TemperatureConverting(entry.Main.Temp, metric),
+			util.WeatherTextToIcon(entry.Weather[0].Description, false),
+			util.TemperatureConverting(entry.Main.Temp, metric),
 			entry.Main.Humidity,
-			utils.PressureConverting(float64(entry.Main.Pressure), metric),
+			util.PressureConverting(entry.Main.Pressure, metric),
 			windSpeedForecast,
-			utils.DegreesToDirectionIcon(entry.Wind.Deg),
+			util.DegreesToDirectionIcon(entry.Wind.Deg),
 		)
 
 		if hours == "21" || hours == "22" || hours == "23" {

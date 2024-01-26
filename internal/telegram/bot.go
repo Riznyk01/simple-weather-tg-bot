@@ -2,7 +2,7 @@ package telegram
 
 import (
 	"SimpleWeatherTgBot/config"
-	"SimpleWeatherTgBot/weather_service"
+	"SimpleWeatherTgBot/internal/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )

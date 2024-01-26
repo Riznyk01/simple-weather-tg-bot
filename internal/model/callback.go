@@ -1,10 +1,6 @@
-package types
+package model
 
 const (
-	CommandStart             = "/start"
-	CommandHelp              = "/help"
-	CommandMetricUnits       = "/metric"
-	CommandNonMetricUnits    = "/nonmetric"
 	CallbackLast             = "repeat last"
 	CallbackCurrent          = "current"
 	CallbackCurrentLocation  = "current 📍"

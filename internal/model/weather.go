@@ -1,14 +1,12 @@
-package types
+package model
 
-type UserData struct {
-	City        string
-	Lat         string
-	Lon         string
-	Metric      bool
-	Last        string
-	RequestsNum int
+// ErrorResponse is a structure used for unmarshalling error responses from weather API requests.
+type ErrorResponse struct {
+	Cod     string `json:"cod"`
+	Message string `json:"message"`
 }
 
+// WeatherCurrent represents data about the current weather.
 type WeatherCurrent struct {
 	Coord struct {
 		Lon float64 `json:"lon"`
@@ -51,6 +49,7 @@ type WeatherCurrent struct {
 	Cod      int    `json:"cod"`
 }
 
+// WeatherForecast represents the weather forecast for 5 days.
 type WeatherForecast struct {
 	Cod     string `json:"cod"`
 	Message int    `json:"message"`

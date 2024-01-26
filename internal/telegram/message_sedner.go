@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"SimpleWeatherTgBot/types"
+	"SimpleWeatherTgBot/internal/model"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -23,8 +23,8 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons .
 
 // Sends inline keyboard when requests for weather_service type is reported after the location is sent.
 func (b *Bot) SendLocationOptions(chatID int64, latStr, lonStr string) error {
-	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, types.MessageChooseOption)
-	err := b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, types.CallbackCurrentLocation, types.CallbackForecastLocation)
+	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, model.MessageChooseOption)
+	err := b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, model.CallbackCurrentLocation, model.CallbackForecastLocation)
 	if err != nil {
 		return err
 	}

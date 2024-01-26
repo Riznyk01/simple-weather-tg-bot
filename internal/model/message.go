@@ -1,4 +1,4 @@
-package types
+package model
 
 const (
 	MessageWelcome             = "🎈Hello, %s. This bot will send you weather information from openweathermap.org. \n\n"

@@ -2,7 +2,7 @@ package weather_service
 
 import (
 	"SimpleWeatherTgBot/config"
-	"SimpleWeatherTgBot/repository"
+	"SimpleWeatherTgBot/internal/repository"
 	"github.com/sirupsen/logrus"
 )
 
