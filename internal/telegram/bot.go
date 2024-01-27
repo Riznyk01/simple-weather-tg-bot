@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"SimpleWeatherTgBot/config"
+	"SimpleWeatherTgBot/internal/user_management_service"
 	"SimpleWeatherTgBot/internal/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
@@ -11,15 +12,17 @@ type Bot struct {
 	bot            *tgbotapi.BotAPI
 	log            *logrus.Logger
 	weatherService *weather_service.WeatherService
+	userService    *user_management_service.UserService
 	cfg            *config.Config
 }
 
-func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather_service.WeatherService, cfg *config.Config) *Bot {
+func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *weather_service.WeatherService, cfg *config.Config, userService *user_management_service.UserService) *Bot {
 	return &Bot{
 		bot:            bot,
+		cfg:            cfg,
 		log:            log,
 		weatherService: weatherService,
-		cfg:            cfg,
+		userService:    userService,
 	}
 }
 func (b *Bot) Run() error {

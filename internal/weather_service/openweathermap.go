@@ -35,28 +35,9 @@ func NewOpenWeatherMap(repo *repository.Repository, cfg *config.Config, log *log
 	}
 }
 
-func (OW *OpenWeatherMapService) SetSystem(chatId int64, system bool) error {
-	return OW.repo.SetSystem(chatId, system)
-}
-func (OW *OpenWeatherMapService) SetCity(chatId int64, city string) error {
-	return OW.repo.SetCity(chatId, city)
-}
-func (OW *OpenWeatherMapService) SetLocation(chatId int64, lat, lon string) error {
-	return OW.repo.SetLocation(chatId, lat, lon)
-}
-func (OW *OpenWeatherMapService) GetSystem(chatId int64) (bool, error) {
-	return OW.repo.GetSystem(chatId)
-}
-func (OW *OpenWeatherMapService) GetCity(chatId int64) (string, error) {
-	return OW.repo.GetCity(chatId)
-}
-func (OW *OpenWeatherMapService) GetLocation(chatId int64) (string, string, error) {
-	return OW.repo.GetLocation(chatId)
-}
-
-// SetLast returns a complete weather message and sets last weather responce.
-func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
-	fc := "SetLast"
+// GetWeatherForecast ...
+func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
+	fc := "GetWeatherForecast"
 
 	weatherUrl := OW.cfg.WeatherApiUrl
 	var cityId string
@@ -151,17 +132,6 @@ func (OW *OpenWeatherMapService) SetLast(chatId int64, weatherCommand string) (w
 		return "", err
 	}
 	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
-}
-func (OW *OpenWeatherMapService) GetLast(chatId int64) (weatherMessage string, err error) {
-	weatherCommand, err := OW.repo.GetLast(chatId)
-	if err != nil {
-		return "", err
-	}
-	weatherMessage, err = OW.SetLast(chatId, weatherCommand)
-	if err != nil {
-		return weatherMessage, err
-	}
-	return weatherMessage, nil
 }
 
 // units returns units based on the metric system.

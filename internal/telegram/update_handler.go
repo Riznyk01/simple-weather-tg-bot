@@ -27,20 +27,13 @@ func (b *Bot) handleCommand(message *tgbotapi.Message, fname string) {
 	fc := "handleCommand"
 
 	switch message.Text {
-	case model.CommandMetricUnits:
-		err := b.weatherService.WeatherControl.SetSystem(message.Chat.ID, true)
+	case model.CommandMetricUnits, model.CommandNonMetricUnits:
+		err := b.userService.SetSystem(message.Chat.ID, message.Text)
 		if err != nil {
 			b.SendMessage(message.Chat.ID, model.MessageSetUsersSystemError)
 			b.log.Errorf("%s: %s", fc, model.MessageSetUsersSystemError)
 		}
-		b.SendMessage(message.Chat.ID, model.MessageMetricUnitOn)
-	case model.CommandNonMetricUnits:
-		err := b.weatherService.WeatherControl.SetSystem(message.Chat.ID, false)
-		if err != nil {
-			b.SendMessage(message.Chat.ID, model.MessageSetUsersSystemError)
-			b.log.Errorf("%s: %s", fc, model.MessageSetUsersSystemError)
-		}
-		b.SendMessage(message.Chat.ID, model.MessageMetricUnitOff)
+		b.SendMessage(message.Chat.ID, model.MessageMetricUnitChanged)
 	case model.CommandStart:
 		b.SendMessage(message.Chat.ID, fmt.Sprintf(model.MessageWelcome, fname)+model.MessageHelp)
 	case model.CommandHelp:
@@ -52,7 +45,7 @@ func (b *Bot) handleCommand(message *tgbotapi.Message, fname string) {
 func (b *Bot) handleText(message *tgbotapi.Message) {
 	fc := "handleText"
 
-	err := b.weatherService.WeatherControl.SetCity(message.Chat.ID, message.Text)
+	err := b.userService.SetCity(message.Chat.ID, message.Text)
 	if err != nil {
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersCityError)
 		b.log.Errorf("%s: %s", fc, model.MessageSetUsersCityError)
@@ -68,7 +61,7 @@ func (b *Bot) handleLocation(message *tgbotapi.Message) {
 	fc := "handleLocation"
 
 	uLat, uLon := fmt.Sprintf("%f", message.Location.Latitude), fmt.Sprintf("%f", message.Location.Longitude)
-	err := b.weatherService.WeatherControl.SetLocation(message.Chat.ID, uLat, uLon)
+	err := b.userService.SetLocation(message.Chat.ID, uLat, uLon)
 	if err != nil {
 		b.log.Errorf("%s: %s", fc, model.MessageSetUsersLocationError)
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersLocationError)
@@ -81,24 +74,35 @@ func (b *Bot) handleLocation(message *tgbotapi.Message) {
 
 // handleCallbackQuery processes callback queries from users.
 func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery, fname string) {
+	fc := "handleCallbackQuery"
+
+	command := callback.Data
 	var userMessage string
 	var err error
+	var getLastError bool
 	if callback.Data == model.CallbackLast {
-		userMessage, err = b.weatherService.WeatherControl.GetLast(callback.Message.Chat.ID)
-	} else {
-		userMessage, err = b.weatherService.WeatherControl.SetLast(callback.Message.Chat.ID, callback.Data)
-	}
-	if err != nil {
-		if errors.Is(err, repository.ErrItemIsEmpty) {
-			b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(model.MessageLastDataUnavailable, fname))
-		} else {
-			b.log.Error(err)
-			b.SendMessage(callback.Message.Chat.ID, err.Error())
+		command, err = b.userService.GetLastWeatherCommand(callback.Message.Chat.ID)
+		if err != nil {
+			if errors.Is(err, repository.ErrItemIsEmpty) {
+				b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(model.MessageLastDataUnavailable, fname))
+				getLastError = true
+			} else {
+				b.log.Errorf("%s: %v", fc, err)
+				getLastError = true
+				b.SendMessage(callback.Message.Chat.ID, err.Error())
+			}
 		}
-	} else {
-		err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, model.CallbackLast)
+	}
+	if !getLastError {
+		userMessage, err = b.weatherService.WeatherControl.GetWeatherForecast(callback.Message.Chat.ID, command)
 		if err != nil {
 			b.log.Error(err)
+			b.SendMessage(callback.Message.Chat.ID, err.Error())
+		} else {
+			err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, model.CallbackLast)
+			if err != nil {
+				b.log.Error(err)
+			}
 		}
 	}
 }
