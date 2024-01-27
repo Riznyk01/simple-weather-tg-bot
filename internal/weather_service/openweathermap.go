@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 const (
@@ -144,6 +145,7 @@ func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
 
 // messageCurrentWeather returns a message with current weather and city id (in string).
 func messageCurrentWeather(currentData model.WeatherCurrent, metric bool) (userMessageCurrent, cityId string) {
+
 	tUnits, wUnits, pUnits := units(metric)
 	pressure := util.PressureConverting(currentData.Main.Pressure, metric)
 	windSpeed := currentData.Wind.Speed
@@ -179,14 +181,15 @@ func messageCurrentWeather(currentData model.WeatherCurrent, metric bool) (userM
 // messageForecastWeather returns a message with weather forecast and city id (in string).
 func messageForecastWeather(forecastData model.WeatherForecast, metric bool) (message, cityIdStr string) {
 	tUnits, wUnits, pUnits := units(metric)
+	timeValue := time.Unix(int64(forecastData.List[0].Dt), 0).
+		In(time.FixedZone("Custom Timezone", forecastData.City.Timezone))
 	// Creating a string to display the country and city names
 	message = fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
-	// Constructing the date display, including day, month, and day of the week,
-	// to be inserted into the user message about the weather.
+	// The date for first day in the format: 31 January (Wednesday).
 	message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
 		util.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"),
-		util.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "m"),
-		util.TimeStampToInfo(forecastData.List[0].Dt, forecastData.City.Timezone, "d"))
+		timeValue.Month().String(),
+		timeValue.Weekday().String())
 	messageHeader := fmt.Sprintf("[time] [   ] [%s] [%s] [%s] [%s, dir.]\n",
 		tUnits, "💧", pUnits, wUnits)
 	message += messageHeader
@@ -194,11 +197,12 @@ func messageForecastWeather(forecastData model.WeatherForecast, metric bool) (me
 	for ind, entry := range forecastData.List {
 		hours := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
 		dayNum := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
-		dayOfWeek := util.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "d")
+		timeValueForecast := time.Unix(int64(entry.Dt), 0).In(time.FixedZone("Custom Timezone", forecastData.City.Timezone))
+
 		if hours == "01" || hours == "02" && ind > 0 {
-			// Constructing the date display, including day, month, and day of the week,
-			// to be inserted into the user message about the weather.
-			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n", dayNum, util.TimeStampToInfo(entry.Dt, forecastData.City.Timezone, "m"), dayOfWeek)
+			// The date for each day in the format: 31 January (Wednesday)".
+			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
+				dayNum, timeValueForecast.Month().String(), timeValueForecast.Weekday().String())
 			message += messageHeader
 		}
 

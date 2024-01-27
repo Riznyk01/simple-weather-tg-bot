@@ -55,7 +55,7 @@ type WeatherForecast struct {
 	Message int    `json:"message"`
 	Cnt     int    `json:"cnt"`
 	List    []struct {
-		Dt   int `json:"dt"`
+		Dt   int `json:"dt"` //Timestamp
 		Main struct {
 			Temp      float64 `json:"temp"`
 			FeelsLike float64 `json:"feels_like"`

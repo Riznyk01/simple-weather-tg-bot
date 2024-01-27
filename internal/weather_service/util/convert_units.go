@@ -14,21 +14,6 @@ func PressureConverting(hPa int, metric bool) int {
 	return int(float64(hPa) * 0.0295299830714)
 }
 
-// TimeStampToInfo converts a Unix timestamp to specific information based on the provided info type.
-func TimeStampToInfo(timeStamp, timezone int, infoType string) string {
-	location := time.FixedZone("Custom Timezone", timezone)
-	timeValue := time.Unix(int64(timeStamp), 0).In(location)
-
-	switch infoType {
-	case "d":
-		return timeValue.Weekday().String()
-	case "m":
-		return timeValue.Month().String()
-	default:
-		return "Invalid info type"
-	}
-}
-
 // TimeStampToHuman converts a timestamp to a human-readable string representation of time.
 func TimeStampToHuman(timeStamp, timezone int, format string) string {
 	location := time.FixedZone("Custom Timezone", timezone)
