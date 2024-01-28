@@ -136,12 +136,13 @@ func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand
 }
 
 // messageCurrentWeather returns a message with current weather and city id (in string).
-func messageCurrentWeather(current model.WeatherCurrent, metric bool) (userMessageCurrent, cityId string) {
+func messageCurrentWeather(current model.WeatherCurrent, metric bool) (messageWithCurrent, cityId string) {
 	tUnits, wUnits, pUnits := convert.Units(metric)
 	pressure := convert.Pressure(current.Main.Pressure, metric)
 	windSpeed := convert.WindSpeed(current.Wind.Speed, metric)
 	loc := time.FixedZone("Custom Timezone", current.Timezone)
-	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%d %s %.2f%s %s \n\n🌅  %s 🌉  %s",
+	messageWithCurrent = fmt.Sprintf(
+		"<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%d %s %.2f%s %s \n\n🌅  %s 🌉  %s",
 		current.Sys.Country, current.Name,
 		convert.AddIcon(current.Weather[0].Description, true),
 		convert.KelvinToFahrenheitAndRound(current.Main.Temp, metric), tUnits,
@@ -153,7 +154,7 @@ func messageCurrentWeather(current model.WeatherCurrent, metric bool) (userMessa
 		windSpeed, wUnits, convert.DegsToDirIcon(current.Wind.Deg),
 		time.Unix(int64(current.Sys.Sunrise), 0).In(loc).Format("15:04"),
 		time.Unix(int64(current.Sys.Sunset), 0).In(loc).Format("15:04"))
-	return userMessageCurrent, strconv.Itoa(current.ID)
+	return messageWithCurrent, strconv.Itoa(current.ID)
 }
 
 // messageForecastWeather returns a message with weather forecast and city id (in string).
@@ -164,33 +165,30 @@ func messageForecastWeather(forecast model.WeatherForecast, metric bool) (messag
 	headerPlace := fmt.Sprintf("<b>%s %s\n\n</b>", forecast.City.Country, forecast.City.Name)
 	headerUnits := fmt.Sprintf("[HOURS] [%s] [%s] [%s] [%s, dir.]\n", tUnits, "💧", pUnits, wUnits)
 	message += headerPlace
-	// ...
-	for ind, entry := range forecast.List {
-		forecastTime := time.Unix(int64(entry.Dt), 0).
+	// Iterate through forecast entries to construct messages for each time period.
+	for i, e := range forecast.List {
+		forecastTime := time.Unix(int64(e.Dt), 0).
 			In(time.FixedZone("Custom Timezone", forecast.City.Timezone))
 		hours, day := forecastTime.Format("15"), forecastTime.Format("02")
-		windSpeedForecast := convert.WindSpeed(entry.Wind.Speed, metric)
-
-		if hours == "01" || hours == "02" || ind == 0 {
-			// The date for each day is displayed in the format: 🗓 31 January (Wednesday).
+		windSpeedForecast := convert.WindSpeed(e.Wind.Speed, metric)
+		// Display the date for each day in the format:
+		// 🗓 31 January (Wednesday) along with the header containing units.
+		if hours == "01" || hours == "02" || i == 0 {
 			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
-				day, forecastTime.Month().String(), forecastTime.Weekday().String())
-			message += headerUnits
+				day, forecastTime.Month().String(), forecastTime.Weekday().String()) + headerUnits
 		}
-
+		// Hourly forecast.
 		message += fmt.Sprintf("%s:00 %s %+d %d%% %d [%.1f %s]\n",
 			hours,
-			convert.AddIcon(entry.Weather[0].Description, false),
-			convert.KelvinToFahrenheitAndRound(entry.Main.Temp, metric),
-			entry.Main.Humidity,
-			convert.Pressure(entry.Main.Pressure, metric),
-			windSpeedForecast, convert.DegsToDirIcon(entry.Wind.Deg),
-		)
-
+			convert.AddIcon(e.Weather[0].Description, false),
+			convert.KelvinToFahrenheitAndRound(e.Main.Temp, metric),
+			e.Main.Humidity,
+			convert.Pressure(e.Main.Pressure, metric),
+			windSpeedForecast, convert.DegsToDirIcon(e.Wind.Deg))
+		// Insert a newline between days at the end of each day.
 		if hours == "21" || hours == "22" || hours == "23" {
 			message += "\n"
 		}
-
 	}
 	return message, strconv.Itoa(forecast.City.ID)
 }
