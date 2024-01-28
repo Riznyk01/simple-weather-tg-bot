@@ -4,7 +4,7 @@ import (
 	"SimpleWeatherTgBot/config"
 	"SimpleWeatherTgBot/internal/model"
 	"SimpleWeatherTgBot/internal/repository"
-	"SimpleWeatherTgBot/internal/weather_service/util"
+	"SimpleWeatherTgBot/internal/weather_service/convert"
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -135,91 +135,56 @@ func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand
 	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
 }
 
-// units returns units based on the metric system.
-func units(metricUnits bool) (tempUnits, windUnits, pressureUnits string) {
-	if metricUnits {
-		return "°C", "m/s", "mmHg"
-	}
-	return "°F", "mph", "inHg"
-}
-
 // messageCurrentWeather returns a message with current weather and city id (in string).
-func messageCurrentWeather(currentData model.WeatherCurrent, metric bool) (userMessageCurrent, cityId string) {
-
-	tUnits, wUnits, pUnits := units(metric)
-	pressure := util.PressureConverting(currentData.Main.Pressure, metric)
-	windSpeed := currentData.Wind.Speed
-	//Converting to miles per hour if non-metric
-	if !metric {
-		windSpeed = util.ToMilesPerHour(currentData.Wind.Speed)
-		pressure = util.PressureConverting(currentData.Main.Pressure, metric)
-	}
+func messageCurrentWeather(current model.WeatherCurrent, metric bool) (userMessageCurrent, cityId string) {
+	tUnits, wUnits, pUnits := convert.Units(metric)
+	pressure := convert.Pressure(current.Main.Pressure, metric)
+	windSpeed := convert.WindSpeed(current.Wind.Speed, metric)
+	loc := time.FixedZone("Custom Timezone", current.Timezone)
 	userMessageCurrent = fmt.Sprintf("<b>%s %s</b> %s\n\n 🌡 %+d%s (Feel %+d%s) 💧 %d%%  \n\n 📉 %+d%s ️ 📈 %+d%s \n%d %s %.2f%s %s \n\n🌅  %s 🌉  %s",
-		currentData.Sys.Country,
-		currentData.Name,
-		util.WeatherTextToIcon(currentData.Weather[0].Description, true),
-		util.TemperatureConverting(currentData.Main.Temp, metric),
-		tUnits,
-		util.TemperatureConverting(currentData.Main.FeelsLike, metric),
-		tUnits,
-		currentData.Main.Humidity,
-		util.TemperatureConverting(currentData.Main.TempMin, metric),
-		tUnits,
-		util.TemperatureConverting(currentData.Main.TempMax, metric),
-		tUnits,
-		pressure,
-		pUnits,
-		windSpeed,
-		wUnits,
-		util.DegreesToDirectionIcon(currentData.Wind.Deg),
-		util.TimeStampToHuman(currentData.Sys.Sunrise, currentData.Timezone, "15:04"),
-		util.TimeStampToHuman(currentData.Sys.Sunset, currentData.Timezone, "15:04"))
-
-	return userMessageCurrent, strconv.Itoa(currentData.ID)
+		current.Sys.Country, current.Name,
+		convert.AddIcon(current.Weather[0].Description, true),
+		convert.KelvinToFahrenheitAndRound(current.Main.Temp, metric), tUnits,
+		convert.KelvinToFahrenheitAndRound(current.Main.FeelsLike, metric), tUnits,
+		current.Main.Humidity,
+		convert.KelvinToFahrenheitAndRound(current.Main.TempMin, metric), tUnits,
+		convert.KelvinToFahrenheitAndRound(current.Main.TempMax, metric), tUnits,
+		pressure, pUnits,
+		windSpeed, wUnits, convert.DegsToDirIcon(current.Wind.Deg),
+		time.Unix(int64(current.Sys.Sunrise), 0).In(loc).Format("15:04"),
+		time.Unix(int64(current.Sys.Sunset), 0).In(loc).Format("15:04"))
+	return userMessageCurrent, strconv.Itoa(current.ID)
 }
 
 // messageForecastWeather returns a message with weather forecast and city id (in string).
-func messageForecastWeather(forecastData model.WeatherForecast, metric bool) (message, cityIdStr string) {
-	tUnits, wUnits, pUnits := units(metric)
-	timeValue := time.Unix(int64(forecastData.List[0].Dt), 0).
-		In(time.FixedZone("Custom Timezone", forecastData.City.Timezone))
-	// Creating a string to display the country and city names
-	message = fmt.Sprintf("<b>%s %s\n\n</b>", forecastData.City.Country, forecastData.City.Name)
-	// The date for first day in the format: 31 January (Wednesday).
-	message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
-		util.TimeStampToHuman(forecastData.List[0].Dt, forecastData.City.Timezone, "02"),
-		timeValue.Month().String(),
-		timeValue.Weekday().String())
-	messageHeader := fmt.Sprintf("[time] [   ] [%s] [%s] [%s] [%s, dir.]\n",
-		tUnits, "💧", pUnits, wUnits)
-	message += messageHeader
+func messageForecastWeather(forecast model.WeatherForecast, metric bool) (message, cityIdStr string) {
+	tUnits, wUnits, pUnits := convert.Units(metric)
+	// A headers displaying the forecast country and city names,
+	// along with units for time, temperature, humidity, pressure, and wind direction.
+	headerPlace := fmt.Sprintf("<b>%s %s\n\n</b>", forecast.City.Country, forecast.City.Name)
+	headerUnits := fmt.Sprintf("[HOURS] [%s] [%s] [%s] [%s, dir.]\n", tUnits, "💧", pUnits, wUnits)
+	message += headerPlace
+	// ...
+	for ind, entry := range forecast.List {
+		forecastTime := time.Unix(int64(entry.Dt), 0).
+			In(time.FixedZone("Custom Timezone", forecast.City.Timezone))
+		hours, day := forecastTime.Format("15"), forecastTime.Format("02")
+		windSpeedForecast := convert.WindSpeed(entry.Wind.Speed, metric)
 
-	for ind, entry := range forecastData.List {
-		hours := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "15")
-		dayNum := util.TimeStampToHuman(entry.Dt, forecastData.City.Timezone, "02")
-		timeValueForecast := time.Unix(int64(entry.Dt), 0).In(time.FixedZone("Custom Timezone", forecastData.City.Timezone))
-
-		if hours == "01" || hours == "02" && ind > 0 {
-			// The date for each day in the format: 31 January (Wednesday)".
+		if hours == "01" || hours == "02" || ind == 0 {
+			// The date for each day is displayed in the format: 🗓 31 January (Wednesday).
 			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
-				dayNum, timeValueForecast.Month().String(), timeValueForecast.Weekday().String())
-			message += messageHeader
+				day, forecastTime.Month().String(), forecastTime.Weekday().String())
+			message += headerUnits
 		}
 
-		windSpeedForecast := entry.Wind.Speed
-		// Converting to miles per hour if non-metric
-		if !metric {
-			windSpeedForecast = util.ToMilesPerHour(entry.Wind.Speed)
-		}
-
-		message += fmt.Sprintf("%s %s %+d %d%% %d [%.1f %s]\n",
-			hours+":00",
-			util.WeatherTextToIcon(entry.Weather[0].Description, false),
-			util.TemperatureConverting(entry.Main.Temp, metric),
+		message += fmt.Sprintf("%s:00 %s %+d %d%% %d [%.1f %s]\n",
+			hours,
+			convert.AddIcon(entry.Weather[0].Description, false),
+			convert.KelvinToFahrenheitAndRound(entry.Main.Temp, metric),
 			entry.Main.Humidity,
-			util.PressureConverting(entry.Main.Pressure, metric),
-			windSpeedForecast,
-			util.DegreesToDirectionIcon(entry.Wind.Deg),
+			convert.Pressure(entry.Main.Pressure, metric),
+			windSpeedForecast, convert.DegsToDirIcon(entry.Wind.Deg),
 		)
 
 		if hours == "21" || hours == "22" || hours == "23" {
@@ -227,5 +192,5 @@ func messageForecastWeather(forecastData model.WeatherForecast, metric bool) (me
 		}
 
 	}
-	return message, strconv.Itoa(forecastData.City.ID)
+	return message, strconv.Itoa(forecast.City.ID)
 }
