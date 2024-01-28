@@ -36,17 +36,59 @@ func NewOpenWeatherMap(repo *repository.Repository, cfg *config.Config, log *log
 	}
 }
 
-// GetWeatherForecast ...
-func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand string) (weatherMessage string, err error) {
-	fc := "GetWeatherForecast"
+// GetWeatherForecast retrieves the weather forecast based on the provided weather command,
+// updates the user's last command, and returns the formatted weather message.
+func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, command string) (weatherMessage string, err error) {
 
-	weatherUrl := OW.cfg.WeatherApiUrl
 	var cityId string
 	var weatherData model.WeatherCurrent
 	var forecastData model.WeatherForecast
-	var errResponse model.ErrorResponse
 
-	switch weatherCommand {
+	metric, err := OW.repo.GetSystem(chatId)
+	if err != nil {
+		OW.log.Error(systemFetchError, err)
+	}
+
+	getWeatherUrl, err := OW.generateWeatherUrl(chatId, command)
+	if err != nil {
+		return "", err
+	}
+
+	respBody, err := OW.makeHttpRequest(getWeatherUrl)
+	if err != nil {
+		return "", err
+	}
+
+	switch command {
+	case model.CallbackCurrent, model.CallbackCurrentLocation:
+		err = json.Unmarshal(respBody, &weatherData)
+		if err != nil {
+			OW.log.Error(err)
+			return "", err
+		}
+		weatherMessage, cityId = messageCurrentWeather(weatherData, metric)
+	case model.CallbackForecast, model.CallbackForecastLocation:
+		err = json.Unmarshal(respBody, &forecastData)
+		if err != nil {
+			OW.log.Error(err)
+			return "", err
+		}
+		weatherMessage, cityId = messageForecastWeather(forecastData, metric)
+	}
+
+	err = OW.repo.SetLast(chatId, command)
+	if err != nil {
+		return "", err
+	}
+	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
+}
+
+// generateWeatherUrl ...
+func (OW *OpenWeatherMapService) generateWeatherUrl(chatId int64, command string) (fullWeatherUrl string, err error) {
+	fc := "generateWeatherUrl"
+
+	weatherUrl := OW.cfg.WeatherApiUrl
+	switch command {
 	case model.CallbackCurrent, model.CallbackCurrentLocation:
 		weatherUrl += "weather?"
 	case model.CallbackForecast, model.CallbackForecastLocation:
@@ -60,7 +102,7 @@ func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand
 
 	q := url.Values{}
 
-	switch weatherCommand {
+	switch command {
 	case model.CallbackCurrent, model.CallbackForecast:
 		city, err := OW.repo.GetCity(chatId)
 		if err != nil {
@@ -88,51 +130,63 @@ func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, weatherCommand
 
 	OW.log.Debug(fc, " url.Values:", q)
 	OW.log.Debug(fc, " weather resp.url:", u.String())
-	resp, err := http.Get(u.String())
+
+	fullWeatherUrl = u.String()
+
+	return fullWeatherUrl, nil
+}
+
+// makeHttpRequest ...
+func (OW *OpenWeatherMapService) makeHttpRequest(fullUrl string) ([]byte, error) {
+	fc := "makeHttpRequest"
+
+	var errResponse model.ErrorResponse
+
+	resp, err := http.Get(fullUrl)
 	if err != nil {
 		OW.log.Error(fc, ": ", err)
-		return "", err
+		return []byte{}, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errorMessage := err.Error()
-		return "", fmt.Errorf("error: %s", errorMessage)
+		return []byte{}, fmt.Errorf("error: %s", errorMessage)
 	}
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
 			err = json.Unmarshal(body, &errResponse)
 			if err == nil {
 				OW.log.Error(errResponse)
-				return "", fmt.Errorf("%s", tryAnother)
+				return []byte{}, fmt.Errorf("%s", tryAnother)
 			}
 		}
 		OW.log.Error(failedToGetWeather, resp.StatusCode)
-		return "", fmt.Errorf(failedToGetWeather, "%d", resp.StatusCode)
+		return []byte{}, fmt.Errorf(failedToGetWeather, "%d", resp.StatusCode)
 	}
+	return body, nil
+}
 
-	switch weatherCommand {
-	case model.CallbackCurrent, model.CallbackCurrentLocation:
-		err = json.Unmarshal(body, &weatherData)
-		if err != nil {
-			OW.log.Error(err)
-			return "", err
-		}
-		weatherMessage, cityId = messageCurrentWeather(weatherData, metric)
-	case model.CallbackForecast, model.CallbackForecastLocation:
-		err = json.Unmarshal(body, &forecastData)
-		if err != nil {
-			OW.log.Error(err)
-			return "", err
-		}
-		weatherMessage, cityId = messageForecastWeather(forecastData, metric)
-	}
-
-	err = OW.repo.SetLast(chatId, weatherCommand)
+// parseCurrentWeather ...
+func (OW *OpenWeatherMapService) parseCurrentWeather(body []byte) (model.WeatherCurrent, error) {
+	var weatherData model.WeatherCurrent
+	err := json.Unmarshal(body, &weatherData)
 	if err != nil {
-		return "", err
+		OW.log.Error(err, body)
+		return model.WeatherCurrent{}, err
 	}
-	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
+	return weatherData, nil
+}
+
+// parseForecastWeather ...
+func (OW *OpenWeatherMapService) parseForecastWeather(body []byte) (model.WeatherForecast, error) {
+	var forecastData model.WeatherForecast
+	err := json.Unmarshal(body, &forecastData)
+	if err != nil {
+		OW.log.Error(err, body)
+		return model.WeatherForecast{}, err
+	}
+	return forecastData, nil
 }
 
 // messageCurrentWeather returns a message with current weather and city id (in string).
@@ -163,7 +217,7 @@ func messageForecastWeather(forecast model.WeatherForecast, metric bool) (messag
 	// A headers displaying the forecast country and city names,
 	// along with units for time, temperature, humidity, pressure, and wind direction.
 	headerPlace := fmt.Sprintf("<b>%s %s\n\n</b>", forecast.City.Country, forecast.City.Name)
-	headerUnits := fmt.Sprintf("[HOURS] [%s] [%s] [%s] [%s, dir.]\n", tUnits, "💧", pUnits, wUnits)
+	headerUnits := fmt.Sprintf("[TIME] [%s] [%s] [%s] [%s, dir.]\n", tUnits, "💧", pUnits, wUnits)
 	message += headerPlace
 	// Iterate through forecast entries to construct messages for each time period.
 	for i, e := range forecast.List {
