@@ -50,59 +50,34 @@ func (b *Bot) handleText(message *tgbotapi.Message) {
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersCityError)
 		b.log.Errorf("%s: %s", fc, model.MessageSetUsersCityError)
 	}
-	err = b.SendMessageWithInlineKeyboard(message.Chat.ID, model.MessageChooseOption, model.CallbackCurrent, model.CallbackForecast)
-	if err != nil {
-		b.log.Errorf("%s: %v", fc, err)
-	}
+	b.SendMessageWithInlineKeyboard(message.Chat.ID, model.MessageChooseOption, model.CallbackCurrent, model.CallbackForecast)
 }
 
 // handleLocationMessage processes location messages from users.
 func (b *Bot) handleLocation(message *tgbotapi.Message) {
-	fc := "handleLocation"
-
 	uLat, uLon := fmt.Sprintf("%f", message.Location.Latitude), fmt.Sprintf("%f", message.Location.Longitude)
 	err := b.userService.SetLocation(message.Chat.ID, uLat, uLon)
 	if err != nil {
-		b.log.Errorf("%s: %s", fc, model.MessageSetUsersLocationError)
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersLocationError)
 	}
-	err = b.SendLocationOptions(message.Chat.ID, uLat, uLon)
-	if err != nil {
-		b.log.Errorf("%s: %v", fc, err)
-	}
+	b.SendLocationOptions(message.Chat.ID, uLat, uLon)
 }
 
 // handleCallbackQuery processes callback queries from users.
 func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery, fname string) {
 	fc := "handleCallbackQuery"
-
-	command := callback.Data
-	var userMessage string
-	var err error
-	var getLastError bool
-	if callback.Data == model.CallbackLast {
-		command, err = b.userService.GetLastWeatherCommand(callback.Message.Chat.ID)
-		if err != nil {
-			if errors.Is(err, repository.ErrItemIsEmpty) {
-				b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(model.MessageLastDataUnavailable, fname))
-				getLastError = true
-			} else {
-				b.log.Errorf("%s: %v", fc, err)
-				getLastError = true
-				b.SendMessage(callback.Message.Chat.ID, err.Error())
-			}
+	var last bool
+	b.log.Debugf("%s: callback: %s", fc, callback.Data)
+	userMessage, err := b.weatherService.WeatherControl.GetWeatherForecast(callback.Message.Chat.ID, callback.Data)
+	if err != nil {
+		last = true
+		if errors.Is(err, repository.ErrItemIsEmpty) {
+			b.SendMessage(callback.Message.Chat.ID, fmt.Sprintf(model.MessageLastDataUnavailable, fname))
+		} else {
+			b.SendMessage(callback.Message.Chat.ID, err.Error())
 		}
 	}
-	if !getLastError {
-		userMessage, err = b.weatherService.WeatherControl.GetWeatherForecast(callback.Message.Chat.ID, command)
-		if err != nil {
-			b.log.Error(err)
-			b.SendMessage(callback.Message.Chat.ID, err.Error())
-		} else {
-			err = b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, model.CallbackLast)
-			if err != nil {
-				b.log.Error(err)
-			}
-		}
+	if !last {
+		b.SendMessageWithInlineKeyboard(callback.Message.Chat.ID, userMessage, model.CallbackLast)
 	}
 }

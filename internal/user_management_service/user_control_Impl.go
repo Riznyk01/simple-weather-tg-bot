@@ -36,7 +36,12 @@ func (UC *UserControlService) SetCity(chatId int64, city string) error {
 
 // SetLocation ...
 func (UC *UserControlService) SetLocation(chatId int64, lat, lon string) error {
-	return UC.repo.SetLocation(chatId, lat, lon)
+	fc := "SetLocation"
+	err := UC.repo.SetLocation(chatId, lat, lon)
+	if err != nil {
+		UC.log.Infof("%s: %v", fc, err)
+	}
+	return nil
 }
 
 // GetSystem ...
@@ -52,14 +57,4 @@ func (UC *UserControlService) GetCity(chatId int64) (string, error) {
 // GetLocation ...
 func (UC *UserControlService) GetLocation(chatId int64) (string, string, error) {
 	return UC.repo.GetLocation(chatId)
-}
-
-// SetLastWeatherCommand ...
-func (UC *UserControlService) SetLastWeatherCommand(chatId int64, command string) error {
-	return UC.repo.SetLast(chatId, command)
-}
-
-// GetLastWeatherCommand ...
-func (UC *UserControlService) GetLastWeatherCommand(chatId int64) (command string, err error) {
-	return UC.repo.GetLast(chatId)
 }

@@ -6,6 +6,7 @@ import (
 	"SimpleWeatherTgBot/internal/repository"
 	"SimpleWeatherTgBot/internal/weather_service/convert"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -43,6 +44,15 @@ func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, command string
 	var cityId string
 	var weatherData model.WeatherCurrent
 	var forecastData model.WeatherForecast
+
+	if command == model.CallbackLast {
+		command, err = OW.repo.GetLast(chatId)
+		if errors.Is(err, repository.ErrItemIsEmpty) {
+			return "", repository.ErrItemIsEmpty
+		} else if err != nil {
+			return "", err
+		}
+	}
 
 	metric, err := OW.repo.GetSystem(chatId)
 	if err != nil {
