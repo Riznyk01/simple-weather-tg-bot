@@ -2,6 +2,8 @@ package repository
 
 import (
 	"SimpleWeatherTgBot/internal/model"
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 type UserRepository interface {
@@ -9,15 +11,16 @@ type UserRepository interface {
 	SetCity(id int64, city string) error
 	SetLocation(id int64, lat, lon string) error
 	SetLastWeatherCommand(id int64, last string) error
-	GetUser(id int64) (model.UserData, error)
+	GetUserById(id int64) (model.UserData, error)
+	CreateUser(userId int64) error
 }
 
 type Repository struct {
 	UserRepository
 }
 
-func NewRepository(memoryStor *MemoryStorage) *Repository {
+func NewRepository(log *logrus.Logger, db *sqlx.DB) *Repository {
 	return &Repository{
-		UserRepository: NewUserMemoryStorage(memoryStor),
+		UserRepository: NewUserRepository(log, db),
 	}
 }

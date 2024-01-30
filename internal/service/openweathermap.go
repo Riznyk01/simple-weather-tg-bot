@@ -38,7 +38,7 @@ func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, lo
 // updates the user's last command, and returns the formatted weather message.
 func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage string, err error) {
 	fc := "GetWeatherForecast"
-	OW.log.Debug(us)
+	OW.log.Debugf("%s user data: %v", fc, us)
 
 	var cityId string
 	var weatherData model.WeatherCurrent

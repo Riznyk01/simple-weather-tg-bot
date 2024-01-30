@@ -36,6 +36,7 @@ func (b *Bot) handleCommand(message *tgbotapi.Message, fname string) {
 
 // handleStartCommand handles the /start command.
 func (b *Bot) handleStartCommand(message *tgbotapi.Message, fname string) {
+	b.weatherService.CreateUser(message.Chat.ID)
 	b.SendMessage(message.Chat.ID, fmt.Sprintf(model.MessageWelcome, fname)+model.MessageHelp)
 }
 
@@ -90,7 +91,7 @@ func (b *Bot) handleLocation(message *tgbotapi.Message) {
 func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery) {
 
 	_ = b.weatherService.UserData.SetLastWeatherCommand(callback.Message.Chat.ID, callback.Data)
-	user, err := b.weatherService.UserData.GetUser(callback.Message.Chat.ID)
+	user, err := b.weatherService.UserData.GetUserById(callback.Message.Chat.ID)
 	if err != nil {
 		b.SendMessage(callback.Message.Chat.ID, err.Error())
 	} else {
@@ -101,7 +102,7 @@ func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery) {
 // handleCallbackQuery handles callback queries from the user with the "repeat last" command.
 func (b *Bot) handleCallbackLast(callback *tgbotapi.CallbackQuery, fname string) {
 
-	user, err := b.weatherService.UserData.GetUser(callback.Message.Chat.ID)
+	user, err := b.weatherService.UserData.GetUserById(callback.Message.Chat.ID)
 	if err != nil {
 		b.SendMessage(callback.Message.Chat.ID, err.Error())
 	} else {

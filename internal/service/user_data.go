@@ -35,43 +35,23 @@ func (UP *UserDataService) SetSystem(chatId int64, command string) (err error) {
 
 // SetCity ...
 func (UP *UserDataService) SetCity(chatId int64, city string) (err error) {
-	fc := "SetCity"
-	err = UP.repo.SetCity(chatId, city)
-	if err != nil {
-		UP.log.Errorf("%s: %v", fc, err)
-		return err
-	}
-	return nil
+	return UP.repo.SetCity(chatId, city)
 }
 
 // SetLocation ...
 func (UP *UserDataService) SetLocation(chatId int64, lat, lon string) error {
-	fc := "SetLocation"
-	err := UP.repo.SetLocation(chatId, lat, lon)
-	if err != nil {
-		UP.log.Errorf("%s: %v", fc, err)
-		return err
-	}
-	return nil
+	return UP.repo.SetLocation(chatId, lat, lon)
 }
 
 func (UP *UserDataService) SetLastWeatherCommand(chatId int64, last string) error {
-	fc := "SetLastWeatherCommand"
-	err := UP.repo.SetLastWeatherCommand(chatId, last)
-	if err != nil {
-		UP.log.Errorf("%s: %v", fc, err)
-		return err
-	}
-	return nil
+	return UP.repo.SetLastWeatherCommand(chatId, last)
 }
 
-// GetUser ...
-func (UP *UserDataService) GetUser(userId int64) (model.UserData, error) {
-	fc := "GetUser"
-	user, err := UP.repo.GetUser(userId)
-	if err != nil {
-		UP.log.Errorf("%s: %v", fc, err)
-		return model.UserData{}, nil
-	}
-	return user, nil
+// GetUserById ...
+func (UP *UserDataService) GetUserById(userId int64) (model.UserData, error) {
+	return UP.repo.GetUserById(userId)
+}
+
+func (UP *UserDataService) CreateUser(userId int64) error {
+	return UP.repo.CreateUser(userId)
 }
