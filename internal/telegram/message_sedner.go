@@ -6,7 +6,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Sends a message with text and inline keyboard for weather_service type selection
+// Sends a message with text and inline keyboard for service type selection
 func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons ...string) {
 	fc := "SendMessageWithInlineKeyboard"
 	msg := tgbotapi.NewMessage(chatID, text)
@@ -24,7 +24,7 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons .
 	}
 }
 
-// Sends inline keyboard when requests for weather_service type is reported after the location is sent.
+// Sends inline keyboard when requests for service type is reported after the location is sent.
 func (b *Bot) SendLocationOptions(chatID int64, latStr, lonStr string) {
 	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, model.MessageChooseOption)
 	b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, model.CallbackCurrentLocation, model.CallbackForecastLocation)

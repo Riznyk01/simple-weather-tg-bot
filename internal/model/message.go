@@ -7,7 +7,9 @@ const (
 	MessageMetricUnitChanged   = "The unit system has been updated."
 	MessageLastDataUnavailable = "Sorry ❤️, %s, the forecast with the latest parameters is currently unavailable due to a bot restart or other reasons. <b>" +
 		"\n\nPlease try sending the city name or location, and then select the desired weather type using the buttons.</b>"
-	MessageSetUsersSystemError   = "Error while saving user's preferred system of measurement."
-	MessageSetUsersLocationError = "Error while saving user's preferred location."
-	MessageSetUsersCityError     = "Error while saving user's preferred city."
+	MessageSetUsersSystemError    = "Error while saving user's preferred system of measurement."
+	MessageSetUsersLocationError  = "Error while saving user's preferred location."
+	MessageSetUsersCityError      = "Error while saving user's preferred city."
+	MessageUnsupportedMessageType = "Sorry, this type of message is not supported by the bot."
+	MessageUnsupportedCommand     = "Sorry, this command is not supported by the bot."
 )

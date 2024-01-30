@@ -1,15 +1,13 @@
-package weather_service
+package service
 
 import (
 	"SimpleWeatherTgBot/config"
+	"SimpleWeatherTgBot/internal/http_client"
 	"SimpleWeatherTgBot/internal/model"
-	"SimpleWeatherTgBot/internal/repository"
-	"SimpleWeatherTgBot/internal/weather_service/convert"
+	"SimpleWeatherTgBot/internal/service/convert"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,120 +18,106 @@ const (
 	moreInfoURLFormat  = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
 	failedToGetWeather = "Failed to get weather data:"
 	tryAnother         = "Please try another city name, or try sending the location."
-	systemFetchError   = "Encountered an error when trying to fetch the users system of measurement:"
 )
 
-type OpenWeatherMapService struct {
-	repo *repository.Repository
-	cfg  *config.Config
-	log  *logrus.Logger
+type OWMService struct {
+	httpClient http_client.HTTPClient
+	cfg        *config.Config
+	log        *logrus.Logger
 }
 
-func NewOpenWeatherMap(repo *repository.Repository, cfg *config.Config, log *logrus.Logger) *OpenWeatherMapService {
-	return &OpenWeatherMapService{
-		repo: repo,
-		cfg:  cfg,
-		log:  log,
+func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, log *logrus.Logger) *OWMService {
+	return &OWMService{
+		httpClient: httpClient,
+		cfg:        cfg,
+		log:        log,
 	}
 }
 
 // GetWeatherForecast retrieves the weather forecast based on the provided weather command,
 // updates the user's last command, and returns the formatted weather message.
-func (OW *OpenWeatherMapService) GetWeatherForecast(chatId int64, command string) (weatherMessage string, err error) {
+func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage string, err error) {
+	fc := "GetWeatherForecast"
+	OW.log.Debug(us)
 
 	var cityId string
 	var weatherData model.WeatherCurrent
 	var forecastData model.WeatherForecast
 
-	if command == model.CallbackLast {
-		command, err = OW.repo.GetLast(chatId)
-		if errors.Is(err, repository.ErrItemIsEmpty) {
-			return "", repository.ErrItemIsEmpty
-		} else if err != nil {
-			return "", err
-		}
-	}
-
-	metric, err := OW.repo.GetSystem(chatId)
+	getWeatherUrl, err := OW.generateWeatherUrl(us)
 	if err != nil {
-		OW.log.Error(systemFetchError, err)
-	}
-
-	getWeatherUrl, err := OW.generateWeatherUrl(chatId, command)
-	if err != nil {
+		OW.log.Errorf("%s: %v", fc, err)
 		return "", err
 	}
 
-	respBody, err := OW.makeHttpRequest(getWeatherUrl)
+	r, err := OW.httpClient.Get(getWeatherUrl)
 	if err != nil {
+		OW.log.Errorf("%s: %v", fc, err)
 		return "", err
 	}
 
-	switch command {
-	case model.CallbackCurrent, model.CallbackCurrentLocation:
-		err = json.Unmarshal(respBody, &weatherData)
-		if err != nil {
-			OW.log.Error(err)
-			return "", err
+	if r.StatusCode != http.StatusOK {
+		var errResponse model.ErrorResponse
+		if r.StatusCode == http.StatusNotFound {
+			decoder := json.NewDecoder(r.Body)
+			if err = decoder.Decode(&errResponse); err != nil {
+				OW.log.Errorf("%s: %v", fc, err)
+				return "", err
+			} else if err == nil {
+				OW.log.Error(errResponse)
+				return "", fmt.Errorf("%s", tryAnother)
+			}
 		}
-		weatherMessage, cityId = messageCurrentWeather(weatherData, metric)
-	case model.CallbackForecast, model.CallbackForecastLocation:
-		err = json.Unmarshal(respBody, &forecastData)
-		if err != nil {
-			OW.log.Error(err)
-			return "", err
-		}
-		weatherMessage, cityId = messageForecastWeather(forecastData, metric)
+		OW.log.Error(failedToGetWeather, r.StatusCode)
+		return "", fmt.Errorf(failedToGetWeather, "%d", r.StatusCode)
 	}
 
-	err = OW.repo.SetLast(chatId, command)
-	if err != nil {
-		return "", err
+	decoder := json.NewDecoder(r.Body)
+	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
+		if err = decoder.Decode(&weatherData); err != nil {
+			OW.log.Errorf("%s: %v", fc, err)
+			return "", err
+		}
+		weatherMessage, cityId = messageCurrentWeather(weatherData, us.Metric)
+	} else if us.Last == model.CallbackForecast || us.Last == model.CallbackForecastLocation {
+		if err = decoder.Decode(&forecastData); err != nil {
+			OW.log.Errorf("%s: %v", fc, err)
+			return "", err
+		}
+		weatherMessage, cityId = messageForecastWeather(forecastData, us.Metric)
 	}
+
 	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
 }
 
 // generateWeatherUrl ...
-func (OW *OpenWeatherMapService) generateWeatherUrl(chatId int64, command string) (fullWeatherUrl string, err error) {
+func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl string, err error) {
 	fc := "generateWeatherUrl"
-
+	OW.log.Debugf("%s command: %s", fc, us.Last)
 	weatherUrl := OW.cfg.WeatherApiUrl
-	switch command {
-	case model.CallbackCurrent, model.CallbackCurrentLocation:
+	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
 		weatherUrl += "weather?"
-	case model.CallbackForecast, model.CallbackForecastLocation:
+	} else if us.Last == model.CallbackForecast || us.Last == model.CallbackForecastLocation {
 		weatherUrl += "forecast?"
 	}
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
+		OW.log.Errorf("%s: can't parse the weather API URL, %v", fc, err)
 		return "", err
 	}
 
 	q := url.Values{}
 
-	switch command {
-	case model.CallbackCurrent, model.CallbackForecast:
-		city, err := OW.repo.GetCity(chatId)
-		if err != nil {
-			return "", err
-		}
-		q.Add("q", city)
-	case model.CallbackForecastLocation, model.CallbackCurrentLocation:
-		lat, lon, err := OW.repo.GetLocation(chatId)
-		if err != nil {
-			return "", err
-		}
-		q.Add("lat", lat)
-		q.Add("lon", lon)
+	if us.Last == model.CallbackCurrent || us.Last == model.CallbackForecast {
+		q.Add("q", us.City)
+	} else if us.Last == model.CallbackForecastLocation || us.Last == model.CallbackCurrentLocation {
+		q.Add("lat", us.Lat)
+		q.Add("lon", us.Lon)
 	}
 
 	q.Add("appid", OW.cfg.WToken)
-	metric, err := OW.repo.GetSystem(chatId)
-	if err != nil {
-		OW.log.Error(systemFetchError, err)
-	}
-	if metric {
+	if us.Metric {
 		q.Add("units", "metric")
 	}
 	u.RawQuery = q.Encode()
@@ -141,62 +125,7 @@ func (OW *OpenWeatherMapService) generateWeatherUrl(chatId int64, command string
 	OW.log.Debug(fc, " url.Values:", q)
 	OW.log.Debug(fc, " weather resp.url:", u.String())
 
-	fullWeatherUrl = u.String()
-
-	return fullWeatherUrl, nil
-}
-
-// makeHttpRequest ...
-func (OW *OpenWeatherMapService) makeHttpRequest(fullUrl string) ([]byte, error) {
-	fc := "makeHttpRequest"
-
-	var errResponse model.ErrorResponse
-
-	resp, err := http.Get(fullUrl)
-	if err != nil {
-		OW.log.Error(fc, ": ", err)
-		return []byte{}, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := err.Error()
-		return []byte{}, fmt.Errorf("error: %s", errorMessage)
-	}
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound {
-			err = json.Unmarshal(body, &errResponse)
-			if err == nil {
-				OW.log.Error(errResponse)
-				return []byte{}, fmt.Errorf("%s", tryAnother)
-			}
-		}
-		OW.log.Error(failedToGetWeather, resp.StatusCode)
-		return []byte{}, fmt.Errorf(failedToGetWeather, "%d", resp.StatusCode)
-	}
-	return body, nil
-}
-
-// parseCurrentWeather ...
-func (OW *OpenWeatherMapService) parseCurrentWeather(body []byte) (model.WeatherCurrent, error) {
-	var weatherData model.WeatherCurrent
-	err := json.Unmarshal(body, &weatherData)
-	if err != nil {
-		OW.log.Error(err, body)
-		return model.WeatherCurrent{}, err
-	}
-	return weatherData, nil
-}
-
-// parseForecastWeather ...
-func (OW *OpenWeatherMapService) parseForecastWeather(body []byte) (model.WeatherForecast, error) {
-	var forecastData model.WeatherForecast
-	err := json.Unmarshal(body, &forecastData)
-	if err != nil {
-		OW.log.Error(err, body)
-		return model.WeatherForecast{}, err
-	}
-	return forecastData, nil
+	return u.String(), nil
 }
 
 // messageCurrentWeather returns a message with current weather and city id (in string).

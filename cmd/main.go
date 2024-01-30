@@ -2,12 +2,13 @@ package main
 
 import (
 	"SimpleWeatherTgBot/config"
+	"SimpleWeatherTgBot/internal/http_client"
 	"SimpleWeatherTgBot/internal/logger"
 	"SimpleWeatherTgBot/internal/repository"
+	"SimpleWeatherTgBot/internal/service"
 	"SimpleWeatherTgBot/internal/telegram"
-	"SimpleWeatherTgBot/internal/user_management_service"
-	"SimpleWeatherTgBot/internal/weather_service"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"time"
 )
 
 func main() {
@@ -16,14 +17,16 @@ func main() {
 	mem := repository.NewMemoryStorage()
 	repo := repository.NewRepository(mem)
 	log := logger.SetupLogger()
-	weatherService := weather_service.NewWeatherService(repo, cfg, log)
-	userService := user_management_service.NewUserService(repo, cfg, log)
+	httpClient := &http_client.DefaultHTTPClient{
+		Timeout: time.Second * 10,
+	}
+	weatherService := service.NewService(repo, cfg, log, httpClient)
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tBot := telegram.NewBot(botApi, log, weatherService, cfg, userService)
+	tBot := telegram.NewBot(botApi, log, weatherService, cfg)
 	tBot.Run()
 }
