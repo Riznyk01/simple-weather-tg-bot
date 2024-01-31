@@ -9,12 +9,12 @@ import (
 )
 
 type UserData interface {
-	SetSystem(id int64, command string) error
-	SetCity(id int64, city string) error
-	SetLocation(id int64, lat, lon string) error
-	SetLastWeatherCommand(id int64, last string) error
+	SetUserMeasurementSystem(id int64, command string) error
+	SetUserLastInputCity(id int64, city string) error
+	SetUserLastInputLocation(id int64, lat, lon string) error
+	SetUserLastWeatherCommand(id int64, last string) error
 	GetUserById(id int64) (model.UserData, error)
-	CreateUser(userId int64) error
+	CreateUserById(userId int64) error
 }
 
 type WeatherApi interface {

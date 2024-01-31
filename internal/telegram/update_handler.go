@@ -36,7 +36,7 @@ func (b *Bot) handleCommand(message *tgbotapi.Message, fname string) {
 
 // handleStartCommand handles the /start command.
 func (b *Bot) handleStartCommand(message *tgbotapi.Message, fname string) {
-	b.weatherService.CreateUser(message.Chat.ID)
+	b.weatherService.CreateUserById(message.Chat.ID)
 	b.SendMessage(message.Chat.ID, fmt.Sprintf(model.MessageWelcome, fname)+model.MessageHelp)
 }
 
@@ -47,7 +47,7 @@ func (b *Bot) handleHelpCommand(message *tgbotapi.Message) {
 
 // handleUnitsCommand handles the /metric and /non-metric commands.
 func (b *Bot) handleUnitsCommand(message *tgbotapi.Message) {
-	err := b.weatherService.UserData.SetSystem(message.Chat.ID, message.Text)
+	err := b.weatherService.UserData.SetUserMeasurementSystem(message.Chat.ID, message.Text)
 	if err != nil {
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersSystemError)
 	}
@@ -57,7 +57,7 @@ func (b *Bot) handleUnitsCommand(message *tgbotapi.Message) {
 // handleText processes text from the user.
 func (b *Bot) handleText(message *tgbotapi.Message) {
 	if !containsEmoji(message.Text) {
-		err := b.weatherService.UserData.SetCity(message.Chat.ID, message.Text)
+		err := b.weatherService.UserData.SetUserLastInputCity(message.Chat.ID, message.Text)
 		if err != nil {
 			b.SendMessage(message.Chat.ID, model.MessageSetUsersCityError)
 		}
@@ -80,7 +80,7 @@ func containsEmoji(text string) bool {
 // handleLocationMessage processes location messages from the user.
 func (b *Bot) handleLocation(message *tgbotapi.Message) {
 	uLat, uLon := fmt.Sprintf("%f", message.Location.Latitude), fmt.Sprintf("%f", message.Location.Longitude)
-	err := b.weatherService.UserData.SetLocation(message.Chat.ID, uLat, uLon)
+	err := b.weatherService.UserData.SetUserLastInputLocation(message.Chat.ID, uLat, uLon)
 	if err != nil {
 		b.SendMessage(message.Chat.ID, model.MessageSetUsersLocationError)
 	}
@@ -90,7 +90,7 @@ func (b *Bot) handleLocation(message *tgbotapi.Message) {
 // handleCallbackQuery handles callback queries from the user.
 func (b *Bot) handleCallbackQuery(callback *tgbotapi.CallbackQuery) {
 
-	_ = b.weatherService.UserData.SetLastWeatherCommand(callback.Message.Chat.ID, callback.Data)
+	_ = b.weatherService.UserData.SetUserLastWeatherCommand(callback.Message.Chat.ID, callback.Data)
 	user, err := b.weatherService.UserData.GetUserById(callback.Message.Chat.ID)
 	if err != nil {
 		b.SendMessage(callback.Message.Chat.ID, err.Error())

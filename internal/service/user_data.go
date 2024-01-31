@@ -18,14 +18,14 @@ func NewUserPreferencesService(log *logrus.Logger, repo *repository.Repository) 
 	}
 }
 
-// SetSystem ...
-func (UP *UserDataService) SetSystem(chatId int64, command string) (err error) {
-	fc := "SetSystem"
+// SetUserMeasurementSystem sets user's system of measurement.
+func (UP *UserDataService) SetUserMeasurementSystem(chatId int64, command string) (err error) {
+	fc := "SetUserMeasurementSystem"
 	m := false
 	if command == model.CommandMetricUnits {
 		m = true
 	}
-	err = UP.repo.SetSystem(chatId, m)
+	err = UP.repo.SetUserMeasurementSystem(chatId, m)
 	if err != nil {
 		UP.log.Errorf("%s: %v", fc, err)
 		return err
@@ -33,25 +33,27 @@ func (UP *UserDataService) SetSystem(chatId int64, command string) (err error) {
 	return nil
 }
 
-// SetCity ...
-func (UP *UserDataService) SetCity(chatId int64, city string) (err error) {
-	return UP.repo.SetCity(chatId, city)
+// SetUserLastInputCity sets the user's last input city for weather forecast.
+func (UP *UserDataService) SetUserLastInputCity(chatId int64, city string) (err error) {
+	return UP.repo.SetUserLastInputCity(chatId, city)
 }
 
-// SetLocation ...
-func (UP *UserDataService) SetLocation(chatId int64, lat, lon string) error {
-	return UP.repo.SetLocation(chatId, lat, lon)
+// SetUserLastInputLocation sets the user's last input location for weather forecast.
+func (UP *UserDataService) SetUserLastInputLocation(chatId int64, lat, lon string) error {
+	return UP.repo.SetUserLastInputLocation(chatId, lat, lon)
 }
 
-func (UP *UserDataService) SetLastWeatherCommand(chatId int64, last string) error {
-	return UP.repo.SetLastWeatherCommand(chatId, last)
+// SetUserLastWeatherCommand sets the user's last input forecast type.
+func (UP *UserDataService) SetUserLastWeatherCommand(chatId int64, last string) error {
+	return UP.repo.SetUserLastWeatherCommand(chatId, last)
 }
 
-// GetUserById ...
+// GetUserById gets the user's data from the database.
 func (UP *UserDataService) GetUserById(userId int64) (model.UserData, error) {
 	return UP.repo.GetUserById(userId)
 }
 
-func (UP *UserDataService) CreateUser(userId int64) error {
-	return UP.repo.CreateUser(userId)
+// CreateUserById creates a user in the database.
+func (UP *UserDataService) CreateUserById(userId int64) error {
+	return UP.repo.CreateUserById(userId)
 }
