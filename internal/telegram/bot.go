@@ -22,16 +22,20 @@ func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *service.Se
 		weatherService: weatherService,
 	}
 }
-func (b *Bot) Run() error {
+func (b *Bot) Run() {
 	b.bot.Debug = b.cfg.BotDebug
-	b.log.Infof("Authorized on account %s at", b.bot.Self.UserName)
+	b.log.Infof("Authorized on account %s.", b.bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	updates := b.bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		b.processIncomingUpdates(update)
+		go b.processIncomingUpdates(update)
 	}
-	return nil
+}
+
+func (b *Bot) Stop() {
+	b.bot.StopReceivingUpdates()
+	b.log.Info("Graceful shutdown complete.")
 }

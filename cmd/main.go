@@ -10,6 +10,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	_ "github.com/lib/pq"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -41,5 +43,21 @@ func main() {
 	}
 
 	tBot := telegram.NewBot(botApi, log, weatherService, cfg)
-	tBot.Run()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		log.Info("Bot is starting.")
+		tBot.Run()
+	}()
+
+	<-stop
+
+	log.Info("Received shutdown signal. Initiating graceful shutdown...")
+	tBot.Stop()
+	err = db.Close()
+	if err != nil {
+		log.Error(err)
+	}
 }

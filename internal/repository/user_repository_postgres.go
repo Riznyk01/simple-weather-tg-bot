@@ -35,7 +35,7 @@ func (r *UserRepositoryPostgres) SetUserMeasurementSystem(id int64, system bool)
 	q := fmt.Sprintf("UPDATE user_data SET metric = $1 WHERE id = $2")
 	_, err := r.db.Exec(q, system, id)
 	if err != nil {
-		r.log.Errorf("%s: Error updating user's preferred system of measurement: %v", fc, err)
+		r.log.Errorf("%s: Error updating user's preferred system of measurement (%v).", fc, err)
 		return err
 	}
 
@@ -49,7 +49,7 @@ func (r *UserRepositoryPostgres) SetUserLastInputCity(id int64, city string) err
 	q := fmt.Sprintf("UPDATE user_data SET city = $1 WHERE id = $2")
 	_, err := r.db.Exec(q, city, id)
 	if err != nil {
-		r.log.Errorf("%s: Error updating user's preferred city: %v", fc, err)
+		r.log.Errorf("%s: Error updating user's preferred city (%v).", fc, err)
 		return err
 	}
 
@@ -63,7 +63,7 @@ func (r *UserRepositoryPostgres) SetUserLastInputLocation(id int64, lat, lon str
 	q := fmt.Sprintf("UPDATE user_data SET lat = $1, lon = $2 WHERE id = $3")
 	_, err := r.db.Exec(q, lat, lon, id)
 	if err != nil {
-		r.log.Errorf("%s: Error updating user's preferred location: %v", fc, err)
+		r.log.Errorf("%s: Error updating user's preferred location (%v).", fc, err)
 		return err
 	}
 	return nil
@@ -76,7 +76,7 @@ func (r *UserRepositoryPostgres) SetUserLastWeatherCommand(userId int64, last st
 	q := fmt.Sprintf("UPDATE %s SET last = $1 WHERE id = $2", usersTable)
 	_, err := r.db.Exec(q, last, userId)
 	if err != nil {
-		r.log.Errorf("%s: Error updating last weather command: %v", fc, err)
+		r.log.Errorf("%s: Error updating last weather command (%v).", fc, err)
 		return err
 	}
 	return nil
@@ -92,7 +92,7 @@ func (r *UserRepositoryPostgres) GetUserById(userId int64) (model.UserData, erro
 	var user UserDataPostgres
 	err := row.Scan(&user.City, &user.Lat, &user.Lon, &user.Metric, &user.Last)
 	if err != nil {
-		r.log.Errorf("%s: Error fetching user from the database: %v", fc, err)
+		r.log.Errorf("%s: Error fetching user from the database (%v).", fc, err)
 		return model.UserData{}, err
 	}
 
@@ -121,7 +121,7 @@ func (r *UserRepositoryPostgres) CreateUserById(userId int64) error {
 	q := fmt.Sprintf("INSERT INTO %s (id, metric) VALUES ($1, true)", usersTable)
 	_, err := r.db.Exec(q, userId)
 	if err != nil {
-		r.log.Errorf("%s: Error inserting user into the database: %v", fc, err)
+		r.log.Errorf("%s: Error inserting user into the database (%v).", fc, err)
 		return err
 	}
 	return nil
