@@ -1,16 +1,16 @@
 # Simple weather tg bot
 
-Simple weather tg bot is a Telegram bot written in Golang that provides weather information from the free OpenWeatherMap API. Users can input city names or send their locations to receive current weather details on demand.
+Weather Telegram Bot is a Telegram bot written in Golang that provides weather information from the free OpenWeatherMap API. Users can input city names or send their locations to receive current weather details on demand. The bot now utilizes a PostgreSQL database for data storage.
 
 ## Table of Contents
 
+- [Screenshots](#Screenshots)
 - [Environment Variables](#environment-variables)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Bot Commands](#bot-commands)
 - [Pricing Information](#pricing-information)
 - [Note](#note)
-- [Screenshots](#Screenshots)
 
 ## Screenshots
 
@@ -29,12 +29,16 @@ Here are some screenshots of the bot in action:
 
 Before running the bot, make sure to set the following environment variables:
 
-BOT_DEBUG=(true or false): "Enable/disable debug mode of the Telegram Bot API."  
-BOT_TOKEN=YOUR_BOT_TOKEN: "Your Telegram Bot Token."  
+
+>BOT_DEBUG=(true or false): "Enable/disable debug mode of the Telegram Bot API."  
 LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace): "Sets the log level."  
+DB_HOST=db: "PostgreSQL database host."  
+DB_NAME=postgres: "PostgreSQL database name."  
+DB_PORT=5432: "PostgreSQL database port."  
+DB_SSLMODE=disable: "PostgreSQL database SSL mode."  
+DB_USERNAME=postgres: "PostgreSQL database username."  
 TYPE_OF_LOG=(JSONLOG or TEXTLOG): "Choose between JSON or text log format."    
-WEATHER_API_URL=https://api.openweathermap.org/data/2.5/: "OpenWeatherMap API URL."  
-WEATHER_TOKEN=YOUR_OPENWEATHERMAP_API_KEY: "Your OpenWeatherMap API Key."  
+WEATHER_API_URL=https://api.openweathermap.org/data/2.5/: "OpenWeatherMap API URL."
 
 Replace `YOUR_BOT_TOKEN` with your Telegram Bot Token, which you can obtain by creating a new bot on Telegram. Follow these steps:
 
@@ -47,6 +51,19 @@ Get your free OpenWeatherMap API Key [here](https://home.openweathermap.org/api_
 
 Set the values of the LOG_LEVEL and TYPE_OF_LOG variables from the provided options.
 
+In addition, according to the docker-compose.yml file in the secrets folder, the following files contain sensitive information:
+- postgres-passwd.txt
+- telegram-bot-token.txt
+- weather-token.txt
+
+These files are used to set the values of the following variables:
+- DB_PASSWORD_FILE
+- BOT_TOKEN_FILE
+- WEATHER_TOKEN_FILE
+- POSTGRES_PASSWORD_FILE
+
+If these variables are not set or empty, the values will be read from the .env and docker-compose.yml (for the database) files without the _FILE suffix in the name.
+
 ## Installation
 
 Clone the repository:
@@ -56,23 +73,16 @@ git clone https://github.com/Riznyk01/simple-weather-tg-bot.git
 cd simple-weather-tg-bot
 ```
 
-Build the Docker image:
+Build the Docker images:
 ```bash
-sudo docker build -t simple-weather-tg-bot .
+make build
 ```
 ## Usage
-Run the Docker container:
+Run the Docker containers:
 ```bash
-sudo docker run -p 8080:8080 \
-    -e BOT_DEBUG=... \
-    -e BOT_TOKEN=... \
-    -e LOG_LEVEL=... \
-    -e TYPE_OF_LOG=... \
-    -e WEATHER_API_URL=https://api.openweathermap.org/data/2.5/ \
-    -e WEATHER_TOKEN=... \
-    simple-weather-tg-bot:latest
+make migrate
+make run
 ```
-
 
 ## Bot Commands
 /start: sends a welcome message and instructions to the user.  
