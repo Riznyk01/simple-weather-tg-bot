@@ -16,24 +16,27 @@ import (
 )
 
 func main() {
-
-	cfg := config.NewConfig()
 	log := logger.SetupLogger()
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatalf("failed to get bot config: %s", err.Error())
+	}
+
 	httpClient := &http_client.DefaultHTTPClient{
 		Timeout: time.Second * 10,
 	}
 
-	db, err := repository.NewPostgresDB(repository.Config{
-		Host:     os.Getenv("DB_Host"),
-		Port:     os.Getenv("DB_Port"),
-		Username: os.Getenv("DB_Username"),
-		Password: os.Getenv("DB_Password"),
-		DBName:   os.Getenv("DB_Name"),
-		SSLMode:  os.Getenv("DB_SSLMode"),
-	})
+	postgresCfg, err := config.NewConfigPostgres()
+	if err != nil {
+		log.Fatalf("failed to get DB config: %s", err.Error())
+	}
+
+	db, err := repository.NewPostgresDB(postgresCfg)
 	if err != nil {
 		log.Fatalf("failed to initialize db: %s", err.Error())
 	}
+
 	repo := repository.NewRepository(log, db)
 	weatherService := service.NewService(repo, cfg, log, httpClient)
 
