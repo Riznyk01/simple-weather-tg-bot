@@ -1,23 +1,20 @@
-# Use the official Golang image as the base image
-FROM golang:1.21
+FROM golang:1.22.0-alpine3.19 AS builder
 
-# Set the working directory inside the container
-WORKDIR /app
-
-# Copy go.mod and go.sum files to the working directory
+WORKDIR /usr/local/src/
 COPY go.mod go.sum ./
-
-# Download and cache dependencies
+RUN apk update && apk add --no-cache bash postgresql-client
 RUN go mod download
 
-# Copy the local package files to the container's working directory
 COPY . .
 
-# Build the application
-RUN go build -o /app/main ./cmd
+RUN go build -o ./bin/weather-bot-app cmd/main.go
 
-# Expose port 8080 to the outside world
-EXPOSE 8080
+FROM alpine
 
-# Command to run the executable
-CMD ["./main"]
+RUN apk update && apk add --no-cache bash postgresql-client
+COPY --from=builder /usr/local/src/bin/weather-bot-app /
+COPY --from=builder /usr/local/src/wait-for-postgres.sh /
+
+RUN chmod +x /wait-for-postgres.sh
+
+CMD ["./weather-bot-app"]

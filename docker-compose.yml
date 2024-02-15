@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  weather-bot-app:
+    build: ./
+    command: /wait-for-postgres.sh db /weather-bot-app
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/postgres-passwd
+      BOT_TOKEN_FILE: /run/secrets/telegram-bot-token
+      WEATHER_TOKEN_FILE: /run/secrets/weather-token
+    secrets:
+        - postgres-passwd
+        - telegram-bot-token
+        - weather-token
+
+  db:
+    restart: always
+    image: postgres:16.1-alpine
+    volumes:
+    - ./.database/postgres/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-passwd
+    ports:
+      - 5432:5432
+    secrets:
+      - postgres-passwd
+secrets:
+  postgres-passwd:
+    file: secrets/postgres-passwd.txt
+  telegram-bot-token:
+    file: secrets/telegram-bot-token.txt
+  weather-token:
+    file: secrets/weather-token.txt
