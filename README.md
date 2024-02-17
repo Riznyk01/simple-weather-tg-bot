@@ -4,10 +4,11 @@ Weather Telegram Bot is a Telegram bot written in Golang that provides weather i
 
 ## Table of Contents
 
-- [Screenshots](#Screenshots)
+- [Screenshots](#screenshots)
 - [Environment Variables](#environment-variables)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Run](#run)
+- [Database Migrations](#database-migrations)
 - [Bot Commands](#bot-commands)
 - [Pricing Information](#pricing-information)
 - [Note](#note)
@@ -27,8 +28,7 @@ Here are some screenshots of the bot in action:
 
 ## Environment Variables
 
-Before running the bot, make sure to set the following environment variables:
-
+Before running the bot, make sure to set the following environment variables in the .env file:
 
 >BOT_DEBUG=(true or false): "Enable/disable debug mode of the Telegram Bot API."  
 LOG_LEVEL=(panic/fatal/error/warn/warning/info/debug/trace): "Sets the log level."  
@@ -77,11 +77,22 @@ Build the Docker images:
 ```bash
 make build
 ```
-## Usage
-Run the Docker containers:
+## Run
+
+To run the Docker container, use the following command:
+
+```bash
+make run
+```
+
+## Database Migrations
+Before running the application, ensure you have the migrate tool installed.  
+Follow the [official instructions](https://github.com/golang-migrate/migrate) to install the migrate tool.
+
+After installing the migrate tool, you can apply database migrations with:
+
 ```bash
 make migrate
-make run
 ```
 
 ## Bot Commands
