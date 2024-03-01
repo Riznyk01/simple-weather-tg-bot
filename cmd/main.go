@@ -20,7 +20,7 @@ func main() {
 
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("failed to get bot config: %s", err.Error())
+		log.Fatalf("Failed to get bot config: %s", err.Error())
 	}
 
 	httpClient := &http_client.DefaultHTTPClient{
@@ -29,12 +29,12 @@ func main() {
 
 	postgresCfg, err := config.NewConfigPostgres()
 	if err != nil {
-		log.Fatalf("failed to get DB config: %s", err.Error())
+		log.Fatalf("Failed to get DB config: %s", err.Error())
 	}
 
 	db, err := repository.NewPostgresDB(postgresCfg)
 	if err != nil {
-		log.Fatalf("failed to initialize db: %s", err.Error())
+		log.Fatalf("Failed to initialize db: %s", err.Error())
 	}
 
 	repo := repository.NewRepository(log, db)
@@ -42,7 +42,7 @@ func main() {
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error occurred while creating a new BotAPI instance: %v", err)
 	}
 
 	tBot := telegram.NewBot(botApi, log, weatherService, cfg)
