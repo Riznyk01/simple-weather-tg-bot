@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"io"
 	"os"
 )
@@ -24,59 +25,63 @@ type PostgresConfig struct {
 }
 
 func NewConfig() (botCfg *Config, err error) {
+	botCfg = &Config{}
 
-	var weatherToken, botToken string
 	if os.Getenv("WEATHER_TOKEN_FILE") != "" {
-		weatherToken, err = readSecret(os.Getenv("WEATHER_TOKEN_FILE"))
+		botCfg.WToken, err = readSecret(os.Getenv("WEATHER_TOKEN_FILE"))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		weatherToken = os.Getenv("WEATHER_TOKEN")
+		botCfg.WToken = os.Getenv("WEATHER_TOKEN")
 	}
 
 	if os.Getenv("BOT_TOKEN_FILE") != "" {
-		botToken, err = readSecret(os.Getenv("BOT_TOKEN_FILE"))
+		botCfg.BotToken, err = readSecret(os.Getenv("BOT_TOKEN_FILE"))
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		botToken = os.Getenv("BOT_TOKEN")
+		botCfg.BotToken = os.Getenv("BOT_TOKEN")
 	}
 
-	return &Config{
-		BotToken:      botToken,
-		WToken:        weatherToken,
-		LogLevel:      os.Getenv("LOG_LEVEL"),
-		LogType:       os.Getenv("TYPE_OF_LOG"),
-		BotDebug:      DebugStrToBool(os.Getenv("BOT_DEBUG")),
-		WeatherApiUrl: os.Getenv("WEATHER_API_URL"),
-	}, nil
+	botCfg.LogLevel = os.Getenv("LOG_LEVEL")
+	botCfg.LogType = os.Getenv("TYPE_OF_LOG")
+	botCfg.BotDebug = DebugStrToBool(os.Getenv("BOT_DEBUG"))
+	botCfg.WeatherApiUrl = os.Getenv("WEATHER_API_URL")
+
+	if botCfg.LogLevel == "" || botCfg.LogType == "" || botCfg.WeatherApiUrl == "" || botCfg.BotToken == "" || botCfg.WToken == "" {
+		return nil, errors.New("some fields in the app config are empty")
+	}
+
+	return botCfg, nil
 }
 
 func DebugStrToBool(envDebugVar string) bool {
 	return envDebugVar == "true"
 }
 
-func NewConfigPostgres() (postgresCfg PostgresConfig, err error) {
-	var dbPass string
-
+func NewConfigPostgres() (postgresCfg *PostgresConfig, err error) {
+	postgresCfg = &PostgresConfig{}
 	if os.Getenv("DB_PASSWORD_FILE") != "" {
-		dbPass, err = readSecret(os.Getenv("DB_PASSWORD_FILE"))
+		postgresCfg.Password, err = readSecret(os.Getenv("DB_PASSWORD_FILE"))
 		if err != nil {
-			return PostgresConfig{}, err
+			return nil, err
 		}
 	} else {
-		dbPass = os.Getenv("DB_PASSWORD")
+		postgresCfg.Password = os.Getenv("DB_PASSWORD")
 	}
-	postgresCfg = PostgresConfig{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		Username: os.Getenv("DB_USERNAME"),
-		Password: dbPass,
-		DBName:   os.Getenv("DB_NAME"),
-		SSLMode:  os.Getenv("DB_SSLMODE"),
+
+	postgresCfg.Host = os.Getenv("DB_HOST")
+	postgresCfg.Port = os.Getenv("DB_PORT")
+	postgresCfg.Username = os.Getenv("DB_USERNAME")
+	postgresCfg.DBName = os.Getenv("DB_NAME")
+	postgresCfg.SSLMode = os.Getenv("DB_SSLMODE")
+
+	if postgresCfg.Host == "" || postgresCfg.Port == "" || postgresCfg.Username == "" || postgresCfg.DBName == "" || postgresCfg.SSLMode == "" {
+		return nil, errors.New("some fields in the PostgreSQL config are empty")
 	}
+
 	return postgresCfg, nil
 }
 

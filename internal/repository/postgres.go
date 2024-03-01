@@ -10,7 +10,7 @@ const (
 	usersTable = "user_data"
 )
 
-func NewPostgresDB(pgCfg config.PostgresConfig) (*sqlx.DB, error) {
+func NewPostgresDB(pgCfg *config.PostgresConfig) (*sqlx.DB, error) {
 	db, err := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		pgCfg.Host, pgCfg.Port, pgCfg.Username, pgCfg.DBName, pgCfg.Password, pgCfg.SSLMode))
 	if err != nil {
