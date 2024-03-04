@@ -117,10 +117,10 @@ func (b *Bot) handleCallbackLast(callback *tgbotapi.CallbackQuery, fname string)
 
 // sendWeather retrieves and sends weather information to the user.
 func (b *Bot) sendWeather(chatId int64, user model.UserData) {
-	fc := "sendWeather"
+	//fc := "sendWeather"
 	userMessage, err := b.weatherService.WeatherApi.GetWeatherForecast(user)
 	if err != nil {
-		b.log.Errorf("%s: %v", fc, err)
+		b.log.Error(err, "Error occurred while bot sends weather to the user")
 		b.SendMessage(chatId, err.Error())
 	} else {
 		b.SendMessageWithInlineKeyboard(chatId, userMessage, model.CallbackLast)

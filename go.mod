@@ -9,4 +9,11 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 )
 
-require golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+require (
+	github.com/bombsimon/logrusr/v4 v4.1.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/zapr v1.3.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
+)

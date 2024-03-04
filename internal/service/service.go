@@ -5,7 +5,7 @@ import (
 	"SimpleWeatherTgBot/internal/http_client"
 	"SimpleWeatherTgBot/internal/model"
 	"SimpleWeatherTgBot/internal/repository"
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 )
 
 type UserData interface {
@@ -26,7 +26,7 @@ type Service struct {
 	WeatherApi
 }
 
-func NewService(repo *repository.Repository, cfg *config.Config, log *logrus.Logger, httpClient http_client.HTTPClient) *Service {
+func NewService(repo *repository.Repository, cfg *config.Config, log *logr.Logger, httpClient http_client.HTTPClient) *Service {
 	return &Service{
 		UserData:   NewUserPreferencesService(log, repo),
 		WeatherApi: NewOpenWeatherMap(httpClient, cfg, log),

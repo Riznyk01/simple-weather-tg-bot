@@ -8,7 +8,7 @@ import (
 
 // Sends a message with text and inline keyboard for service type selection
 func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons ...string) {
-	fc := "SendMessageWithInlineKeyboard"
+	//fc := "SendMessageWithInlineKeyboard"
 	msg := tgbotapi.NewMessage(chatID, text)
 
 	var inlineButtons []tgbotapi.InlineKeyboardButton
@@ -20,7 +20,7 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons .
 	msg.ParseMode = "HTML"
 	_, err := b.bot.Send(msg)
 	if err != nil {
-		b.log.Debugf("%s: %v", fc, err)
+		b.log.Error(err, "Error occurred while sending message with inline keyb. to the user.")
 	}
 }
 
@@ -35,6 +35,6 @@ func (b *Bot) SendMessage(chatID int64, text string) {
 	msg.ParseMode = "HTML"
 	_, err := b.bot.Send(msg)
 	if err != nil {
-		b.log.Info(err)
+		b.log.Error(err, "Error occurred while sending message to the user.")
 	}
 }

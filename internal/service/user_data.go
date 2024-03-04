@@ -3,15 +3,15 @@ package service
 import (
 	"SimpleWeatherTgBot/internal/model"
 	"SimpleWeatherTgBot/internal/repository"
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 )
 
 type UserDataService struct {
-	log  *logrus.Logger
+	log  *logr.Logger
 	repo *repository.Repository
 }
 
-func NewUserPreferencesService(log *logrus.Logger, repo *repository.Repository) *UserDataService {
+func NewUserPreferencesService(log *logr.Logger, repo *repository.Repository) *UserDataService {
 	return &UserDataService{
 		log:  log,
 		repo: repo,
@@ -27,7 +27,8 @@ func (UP *UserDataService) SetUserMeasurementSystem(chatId int64, command string
 	}
 	err = UP.repo.SetUserMeasurementSystem(chatId, m)
 	if err != nil {
-		UP.log.Errorf("%s: %v", fc, err)
+		UP.log.Error(err, fc)
+		//UP.log.Errorf("%s: %v", fc, err)
 		return err
 	}
 	return nil

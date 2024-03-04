@@ -3,18 +3,18 @@ package telegram
 import (
 	"SimpleWeatherTgBot/config"
 	"SimpleWeatherTgBot/internal/service"
+	"github.com/go-logr/logr"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/sirupsen/logrus"
 )
 
 type Bot struct {
 	bot            *tgbotapi.BotAPI
-	log            *logrus.Logger
+	log            *logr.Logger
 	weatherService *service.Service
 	cfg            *config.Config
 }
 
-func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *service.Service, cfg *config.Config) *Bot {
+func NewBot(bot *tgbotapi.BotAPI, log *logr.Logger, weatherService *service.Service, cfg *config.Config) *Bot {
 	return &Bot{
 		bot:            bot,
 		cfg:            cfg,
@@ -24,7 +24,7 @@ func NewBot(bot *tgbotapi.BotAPI, log *logrus.Logger, weatherService *service.Se
 }
 func (b *Bot) Run() {
 	b.bot.Debug = b.cfg.BotDebug
-	b.log.Infof("Authorized on account %s.", b.bot.Self.UserName)
+	b.log.Info("Authorized on account", "account", b.bot.Self.UserName)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 

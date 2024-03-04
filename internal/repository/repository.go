@@ -2,8 +2,8 @@ package repository
 
 import (
 	"SimpleWeatherTgBot/internal/model"
+	"github.com/go-logr/logr"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 type UserRepository interface {
@@ -19,7 +19,7 @@ type Repository struct {
 	UserRepository
 }
 
-func NewRepository(log *logrus.Logger, db *sqlx.DB) *Repository {
+func NewRepository(log *logr.Logger, db *sqlx.DB) *Repository {
 	return &Repository{
 		UserRepository: NewUserRepository(log, db),
 	}

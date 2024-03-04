@@ -7,7 +7,7 @@ import (
 	"SimpleWeatherTgBot/internal/service/convert"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
+	"github.com/go-logr/logr"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,10 +23,10 @@ const (
 type OWMService struct {
 	httpClient http_client.HTTPClient
 	cfg        *config.Config
-	log        *logrus.Logger
+	log        *logr.Logger
 }
 
-func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, log *logrus.Logger) *OWMService {
+func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, log *logr.Logger) *OWMService {
 	return &OWMService{
 		httpClient: httpClient,
 		cfg:        cfg,
@@ -37,22 +37,21 @@ func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, lo
 // GetWeatherForecast retrieves the weather forecast based on the provided weather command,
 // updates the user's last command, and returns the formatted weather message.
 func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage string, err error) {
-	fc := "GetWeatherForecast"
-	OW.log.Debugf("%s user data: %v", fc, us)
-
+	//fc := "GetWeatherForecast"
+	OW.log.V(1).Info("user data: ", "data", us)
 	var cityId string
 	var weatherData model.WeatherCurrent
 	var forecastData model.WeatherForecast
 
 	getWeatherUrl, err := OW.generateWeatherUrl(us)
 	if err != nil {
-		OW.log.Errorf("%s: %v", fc, err)
+		OW.log.Error(err, "Error occurred while generating weather url.")
 		return "", err
 	}
 
 	r, err := OW.httpClient.Get(getWeatherUrl)
 	if err != nil {
-		OW.log.Errorf("%s: %v", fc, err)
+		OW.log.Error(err, "Error occurred while getting weather forecast.")
 		return "", err
 	}
 
@@ -61,27 +60,28 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 		if r.StatusCode == http.StatusNotFound {
 			decoder := json.NewDecoder(r.Body)
 			if err = decoder.Decode(&errResponse); err != nil {
-				OW.log.Errorf("%s: %v", fc, err)
+				OW.log.Error(err, "Error occurred while decoding weather response.")
 				return "", err
 			} else if err == nil {
-				OW.log.Error(errResponse)
+				OW.log.Error(err, "Error occurred while getting weather by city name.")
 				return "", fmt.Errorf("%s", tryAnother)
 			}
 		}
-		OW.log.Error(failedToGetWeather, r.StatusCode)
+		//add r.StatusCode
+		OW.log.Error(err, "Error occurred while getting weather.")
 		return "", fmt.Errorf(failedToGetWeather, "%d", r.StatusCode)
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
 		if err = decoder.Decode(&weatherData); err != nil {
-			OW.log.Errorf("%s: %v", fc, err)
+			OW.log.Error(err, "Error occurred while decoding weather data.")
 			return "", err
 		}
 		weatherMessage, cityId = messageCurrentWeather(weatherData, us.Metric)
 	} else if us.Last == model.CallbackForecast || us.Last == model.CallbackForecastLocation {
 		if err = decoder.Decode(&forecastData); err != nil {
-			OW.log.Errorf("%s: %v", fc, err)
+			OW.log.Error(err, "Error occurred while decoding weather data.")
 			return "", err
 		}
 		weatherMessage, cityId = messageForecastWeather(forecastData, us.Metric)
@@ -92,8 +92,10 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 
 // generateWeatherUrl ...
 func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl string, err error) {
-	fc := "generateWeatherUrl"
-	OW.log.Debugf("%s command: %s", fc, us.Last)
+	//fc := "generateWeatherUrl"
+
+	OW.log.V(1).Info("command received: ", "command", us)
+
 	weatherUrl := OW.cfg.WeatherApiUrl
 	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
 		weatherUrl += "weather?"
@@ -103,7 +105,7 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		OW.log.Errorf("%s: can't parse the weather API URL, %v", fc, err)
+		OW.log.Error(err, "Can't parse the weather API URL")
 		return "", err
 	}
 
@@ -122,8 +124,8 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 	}
 	u.RawQuery = q.Encode()
 
-	OW.log.Debug(fc, " url.Values:", q)
-	OW.log.Debug(fc, " weather resp.url:", u.String())
+	OW.log.V(1).Info(" url.Values:", "values", q)
+	OW.log.V(1).Info(" weather resp.url:", "url", u.String())
 
 	return u.String(), nil
 }
