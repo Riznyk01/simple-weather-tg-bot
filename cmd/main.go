@@ -24,7 +24,7 @@ func main() {
 
 	zapLog, err := zap.NewDevelopment()
 	if err != nil {
-		panic(fmt.Sprintf("who watches the watchmen (%v)?", err))
+		panic(fmt.Sprintf("Failed to initialize logger: %v", err))
 	}
 	log = zapr.NewLogger(zapLog)
 
@@ -71,6 +71,6 @@ func main() {
 	tBot.Stop()
 	err = db.Close()
 	if err != nil {
-		log.Error(err, "error occurred while closing the DB")
+		log.Error(err, "Error occurred while closing the DB")
 	}
 }

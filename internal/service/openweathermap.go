@@ -5,6 +5,7 @@ import (
 	"SimpleWeatherTgBot/internal/http_client"
 	"SimpleWeatherTgBot/internal/model"
 	"SimpleWeatherTgBot/internal/service/convert"
+	"SimpleWeatherTgBot/internal/text"
 	"encoding/json"
 	"fmt"
 	"github.com/go-logr/logr"
@@ -12,12 +13,6 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-)
-
-const (
-	moreInfoURLFormat  = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
-	failedToGetWeather = "Failed to get weather data:"
-	tryAnother         = "Please try another city name, or try sending the location."
 )
 
 type OWMService struct {
@@ -45,13 +40,13 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 
 	getWeatherUrl, err := OW.generateWeatherUrl(us)
 	if err != nil {
-		OW.log.Error(err, "Error occurred while generating weather url.")
+		OW.log.Error(err, text.ErrWhileGeneratingURL)
 		return "", err
 	}
 
 	r, err := OW.httpClient.Get(getWeatherUrl)
 	if err != nil {
-		OW.log.Error(err, "Error occurred while getting weather forecast.")
+		OW.log.Error(err, text.ErrWhileGettingWeather)
 		return "", err
 	}
 
@@ -60,34 +55,33 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 		if r.StatusCode == http.StatusNotFound {
 			decoder := json.NewDecoder(r.Body)
 			if err = decoder.Decode(&errResponse); err != nil {
-				OW.log.Error(err, "Error occurred while decoding weather response.")
+				OW.log.Error(err, text.ErrDecodingJSON)
 				return "", err
 			} else if err == nil {
-				OW.log.Error(err, "Error occurred while getting weather by city name.")
-				return "", fmt.Errorf("%s", tryAnother)
+				OW.log.V(1).Info(text.ErrFetchingWeather)
+				return "", fmt.Errorf("%s", text.TryAnother)
 			}
 		}
-		//add r.StatusCode
-		OW.log.Error(err, "Error occurred while getting weather.")
-		return "", fmt.Errorf(failedToGetWeather, "%d", r.StatusCode)
+		OW.log.V(1).Info(text.ErrWhileGettingWeather, "StatusCode", r.StatusCode)
+		return "", fmt.Errorf(text.FailedToGetWeather)
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
+	if us.Last == text.CallbackCurrent || us.Last == text.CallbackCurrentLocation {
 		if err = decoder.Decode(&weatherData); err != nil {
-			OW.log.Error(err, "Error occurred while decoding weather data.")
+			OW.log.Error(err, text.ErrDecodingJSON)
 			return "", err
 		}
 		weatherMessage, cityId = messageCurrentWeather(weatherData, us.Metric)
-	} else if us.Last == model.CallbackForecast || us.Last == model.CallbackForecastLocation {
+	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation {
 		if err = decoder.Decode(&forecastData); err != nil {
-			OW.log.Error(err, "Error occurred while decoding weather data.")
+			OW.log.Error(err, text.ErrDecodingJSON)
 			return "", err
 		}
 		weatherMessage, cityId = messageForecastWeather(forecastData, us.Metric)
 	}
 
-	return weatherMessage + fmt.Sprintf(moreInfoURLFormat, cityId), nil
+	return weatherMessage + fmt.Sprintf(text.MoreInfoURLFormat, cityId), nil
 }
 
 // generateWeatherUrl ...
@@ -97,23 +91,23 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 	OW.log.V(1).Info("command received: ", "command", us)
 
 	weatherUrl := OW.cfg.WeatherApiUrl
-	if us.Last == model.CallbackCurrent || us.Last == model.CallbackCurrentLocation {
+	if us.Last == text.CallbackCurrent || us.Last == text.CallbackCurrentLocation {
 		weatherUrl += "weather?"
-	} else if us.Last == model.CallbackForecast || us.Last == model.CallbackForecastLocation {
+	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation {
 		weatherUrl += "forecast?"
 	}
 
 	u, err := url.Parse(weatherUrl)
 	if err != nil {
-		OW.log.Error(err, "Can't parse the weather API URL")
+		OW.log.Error(err, text.ErrParsingWeatherURL)
 		return "", err
 	}
 
 	q := url.Values{}
 
-	if us.Last == model.CallbackCurrent || us.Last == model.CallbackForecast {
+	if us.Last == text.CallbackCurrent || us.Last == text.CallbackForecast {
 		q.Add("q", us.City)
-	} else if us.Last == model.CallbackForecastLocation || us.Last == model.CallbackCurrentLocation {
+	} else if us.Last == text.CallbackForecastLocation || us.Last == text.CallbackCurrentLocation {
 		q.Add("lat", us.Lat)
 		q.Add("lon", us.Lon)
 	}
@@ -124,8 +118,8 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 	}
 	u.RawQuery = q.Encode()
 
-	OW.log.V(1).Info(" url.Values:", "values", q)
-	OW.log.V(1).Info(" weather resp.url:", "url", u.String())
+	OW.log.V(1).Info("URL values:", "values", q)
+	OW.log.V(1).Info("response URL:", "url", u.String())
 
 	return u.String(), nil
 }

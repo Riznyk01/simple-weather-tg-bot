@@ -3,6 +3,7 @@ package service
 import (
 	"SimpleWeatherTgBot/internal/model"
 	"SimpleWeatherTgBot/internal/repository"
+	"SimpleWeatherTgBot/internal/text"
 	"github.com/go-logr/logr"
 )
 
@@ -20,15 +21,14 @@ func NewUserPreferencesService(log *logr.Logger, repo *repository.Repository) *U
 
 // SetUserMeasurementSystem sets user's system of measurement.
 func (UP *UserDataService) SetUserMeasurementSystem(chatId int64, command string) (err error) {
-	fc := "SetUserMeasurementSystem"
+
 	m := false
-	if command == model.CommandMetricUnits {
+	if command == text.CommandMetricUnits {
 		m = true
 	}
 	err = UP.repo.SetUserMeasurementSystem(chatId, m)
 	if err != nil {
-		UP.log.Error(err, fc)
-		//UP.log.Errorf("%s: %v", fc, err)
+		UP.log.Error(err, text.ErrWhileSettingUserData)
 		return err
 	}
 	return nil

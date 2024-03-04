@@ -1,4 +1,4 @@
-package model
+package text
 
 const (
 	CommandStart          = "/start"

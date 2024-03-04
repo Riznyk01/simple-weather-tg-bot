@@ -1,15 +1,15 @@
 package telegram
 
 import (
-	"SimpleWeatherTgBot/internal/model"
+	"SimpleWeatherTgBot/internal/text"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Sends a message with text and inline keyboard for service type selection
-func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons ...string) {
-	//fc := "SendMessageWithInlineKeyboard"
-	msg := tgbotapi.NewMessage(chatID, text)
+// SendMessageWithInlineKeyboard sends a message with text and inline keyboard for service type selection
+func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, msgText string, buttons ...string) {
+
+	msg := tgbotapi.NewMessage(chatID, msgText)
 
 	var inlineButtons []tgbotapi.InlineKeyboardButton
 	for _, button := range buttons {
@@ -20,21 +20,21 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, text string, buttons .
 	msg.ParseMode = "HTML"
 	_, err := b.bot.Send(msg)
 	if err != nil {
-		b.log.Error(err, "Error occurred while sending message with inline keyb. to the user.")
+		b.log.Error(err, text.ErrWhileSendingInline)
 	}
 }
 
-// Sends inline keyboard when requests for service type is reported after the location is sent.
+// SendLocationOptions sends inline keyboard when requests for service type is reported after the location is sent.
 func (b *Bot) SendLocationOptions(chatID int64, latStr, lonStr string) {
-	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, model.MessageChooseOption)
-	b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, model.CallbackCurrentLocation, model.CallbackForecastLocation)
+	chooseWeatherType := fmt.Sprintf("Your location: %s, %v\n%s", latStr, lonStr, text.MsgChooseOption)
+	b.SendMessageWithInlineKeyboard(chatID, chooseWeatherType, text.CallbackCurrentLocation, text.CallbackForecastLocation)
 }
 
-func (b *Bot) SendMessage(chatID int64, text string) {
-	msg := tgbotapi.NewMessage(chatID, text)
+func (b *Bot) SendMessage(chatID int64, msgText string) {
+	msg := tgbotapi.NewMessage(chatID, msgText)
 	msg.ParseMode = "HTML"
 	_, err := b.bot.Send(msg)
 	if err != nil {
-		b.log.Error(err, "Error occurred while sending message to the user.")
+		b.log.Error(err, text.ErrWhileSendingMsg)
 	}
 }
