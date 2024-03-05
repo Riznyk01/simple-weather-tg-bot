@@ -1,4 +1,4 @@
-package service
+package weather_client
 
 import (
 	"SimpleWeatherTgBot/config"
@@ -32,7 +32,7 @@ func NewOpenWeatherMap(httpClient http_client.HTTPClient, cfg *config.Config, lo
 // GetWeatherForecast retrieves the weather forecast based on the provided weather command,
 // updates the user's last command, and returns the formatted weather message.
 func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage string, err error) {
-	//fc := "GetWeatherForecast"
+
 	OW.log.V(1).Info("user data: ", "data", us)
 	var cityId string
 	var weatherData model.WeatherCurrent
@@ -80,13 +80,11 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 		}
 		weatherMessage, cityId = messageForecastWeather(forecastData, us.Metric)
 	}
-
 	return weatherMessage + fmt.Sprintf(text.MoreInfoURLFormat, cityId), nil
 }
 
 // generateWeatherUrl ...
 func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl string, err error) {
-	//fc := "generateWeatherUrl"
 
 	OW.log.V(1).Info("command received: ", "command", us)
 

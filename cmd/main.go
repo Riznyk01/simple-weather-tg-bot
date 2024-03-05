@@ -6,6 +6,7 @@ import (
 	"SimpleWeatherTgBot/internal/repository"
 	"SimpleWeatherTgBot/internal/service"
 	"SimpleWeatherTgBot/internal/telegram"
+	"SimpleWeatherTgBot/internal/weather_client"
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
@@ -48,14 +49,16 @@ func main() {
 	}
 
 	repo := repository.NewRepository(&log, db)
-	weatherService := service.NewService(repo, cfg, &log, httpClient)
+
+	weatherClient := weather_client.NewWeather(httpClient, cfg, &log)
+	serv := service.NewService(&log, repo, weatherClient)
 
 	botApi, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		log.Error(err, "Error occurred while creating a new BotAPI instance:")
 	}
 
-	tBot := telegram.NewBot(botApi, &log, weatherService, cfg)
+	tBot := telegram.NewBot(botApi, &log, cfg, serv)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

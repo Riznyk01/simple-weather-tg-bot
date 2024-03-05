@@ -7,3 +7,8 @@ type UserData struct {
 	Metric bool
 	Last   string
 }
+
+type UserMessage struct {
+	Text    string
+	Buttons []string
+}
