@@ -59,7 +59,7 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 				return "", err
 			} else if err == nil {
 				OW.log.V(1).Info(text.ErrFetchingWeather)
-				return "", fmt.Errorf("%s", text.TryAnother)
+				return text.TryAnother, nil
 			}
 		}
 		OW.log.V(1).Info(text.ErrWhileGettingWeather, "StatusCode", r.StatusCode)
@@ -73,12 +73,12 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 			return "", err
 		}
 		weatherMessage, cityId = messageCurrentWeather(weatherData, us.Metric)
-	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation {
+	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation || us.Last == text.CallbackTodayLocation || us.Last == text.CallbackToday {
 		if err = decoder.Decode(&forecastData); err != nil {
 			OW.log.Error(err, text.ErrDecodingJSON)
 			return "", err
 		}
-		weatherMessage, cityId = messageForecastWeather(forecastData, us.Metric)
+		weatherMessage, cityId = messageForecastWeather(forecastData, us.Last, us.Metric)
 	}
 	return weatherMessage + fmt.Sprintf(text.MoreInfoURLFormat, cityId), nil
 }
@@ -91,7 +91,7 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 	weatherUrl := OW.cfg.WeatherApiUrl
 	if us.Last == text.CallbackCurrent || us.Last == text.CallbackCurrentLocation {
 		weatherUrl += "weather?"
-	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation {
+	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation || us.Last == text.CallbackTodayLocation || us.Last == text.CallbackToday {
 		weatherUrl += "forecast?"
 	}
 
@@ -103,9 +103,9 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 
 	q := url.Values{}
 
-	if us.Last == text.CallbackCurrent || us.Last == text.CallbackForecast {
+	if us.Last == text.CallbackCurrent || us.Last == text.CallbackForecast || us.Last == text.CallbackToday {
 		q.Add("q", us.City)
-	} else if us.Last == text.CallbackForecastLocation || us.Last == text.CallbackCurrentLocation {
+	} else if us.Last == text.CallbackForecastLocation || us.Last == text.CallbackCurrentLocation || us.Last == text.CallbackTodayLocation {
 		q.Add("lat", us.Lat)
 		q.Add("lon", us.Lon)
 	}
@@ -141,11 +141,11 @@ func messageCurrentWeather(current model.WeatherCurrent, metric bool) (messageWi
 		windSpeed, wUnits, convert.DegsToDirIcon(current.Wind.Deg),
 		time.Unix(int64(current.Sys.Sunrise), 0).In(loc).Format("15:04"),
 		time.Unix(int64(current.Sys.Sunset), 0).In(loc).Format("15:04"))
-	return messageWithCurrent, strconv.Itoa(current.ID)
+	return messageWithCurrent + "\n", strconv.Itoa(current.ID)
 }
 
 // messageForecastWeather returns a message with weather forecast and city id (in string).
-func messageForecastWeather(forecast model.WeatherForecast, metric bool) (message, cityIdStr string) {
+func messageForecastWeather(forecast model.WeatherForecast, command string, metric bool) (message, cityIdStr string) {
 	tUnits, wUnits, pUnits := convert.Units(metric)
 	// A headers displaying the forecast country and city names,
 	// along with units for time, temperature, humidity, pressure, and wind direction.
@@ -153,27 +153,39 @@ func messageForecastWeather(forecast model.WeatherForecast, metric bool) (messag
 	headerUnits := fmt.Sprintf("[TIME] [%s] [%s] [%s] [%s, dir.]\n", tUnits, "💧", pUnits, wUnits)
 	message += headerPlace
 	// Iterate through forecast entries to construct messages for each time period.
-	for i, e := range forecast.List {
-		forecastTime := time.Unix(int64(e.Dt), 0).
+	//for i, e := range forecast.List {
+	for i := 0; i < len(forecast.List); i++ {
+		forecastTime := time.Unix(int64(forecast.List[i].Dt), 0).
 			In(time.FixedZone("Custom Timezone", forecast.City.Timezone))
+		// Check if the user needs today's forecast.
+		// Breaks if current entry is the next day.
+		if (command == text.CallbackTodayLocation || command == text.CallbackToday) && i != 0 {
+			lastEntrysDay, _ := strconv.Atoi(time.Unix(int64(forecast.List[i-1].Dt), 0).
+				In(time.FixedZone("Custom Timezone", forecast.City.Timezone)).Format("02"))
+			currentDay, _ := strconv.Atoi(forecastTime.Format("02"))
+			if currentDay > lastEntrysDay {
+				break
+			}
+		}
 		hours, day := forecastTime.Format("15"), forecastTime.Format("02")
-		windSpeedForecast := convert.WindSpeed(e.Wind.Speed, metric)
+		windSpeedForecast := convert.WindSpeed(forecast.List[i].Wind.Speed, metric)
 		// Display the date for each day in the format:
 		// 🗓 31 January (Wednesday) along with the header containing units.
-		if hours == "01" || hours == "02" || i == 0 {
+		entrysHour, _ := strconv.Atoi(hours)
+		if entrysHour < 3 || i == 0 {
 			message += fmt.Sprintf("<b>🗓 %s %s (%s)</b>\n",
 				day, forecastTime.Month().String(), forecastTime.Weekday().String()) + headerUnits
 		}
 		// Hourly forecast.
 		message += fmt.Sprintf("%s:00 %s %+d %d%% %d [%.1f %s]\n",
 			hours,
-			convert.AddIcon(e.Weather[0].Description, false),
-			convert.KelvinToFahrenheitAndRound(e.Main.Temp, metric),
-			e.Main.Humidity,
-			convert.Pressure(e.Main.Pressure, metric),
-			windSpeedForecast, convert.DegsToDirIcon(e.Wind.Deg))
+			convert.AddIcon(forecast.List[i].Weather[0].Description, false),
+			convert.KelvinToFahrenheitAndRound(forecast.List[i].Main.Temp, metric),
+			forecast.List[i].Main.Humidity,
+			convert.Pressure(forecast.List[i].Main.Pressure, metric),
+			windSpeedForecast, convert.DegsToDirIcon(forecast.List[i].Wind.Deg))
 		// Insert a newline between days at the end of each day.
-		if hours == "21" || hours == "22" || hours == "23" {
+		if entrysHour == 23 && i != len(forecast.List) {
 			message += "\n"
 		}
 	}

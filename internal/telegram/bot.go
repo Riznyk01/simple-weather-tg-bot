@@ -43,37 +43,41 @@ func (b *Bot) processIncomingUpdates(update tgbotapi.Update) {
 	var m model.UserMessage
 	var err error
 
-	if update.Message != nil && update.Message.IsCommand() { //When user sends command
+	if update.Message != nil && update.Message.IsCommand() { // When user sends command
 
 		m, _ = b.service.Handler.HandleCommand(update.Message, update.SentFrom().FirstName)
-		b.SendMessage(update.Message.Chat.ID, m.Text)
-	} else if update.Message != nil && update.Message.Location != nil { //When user sends location
+		b.sendMessage(update.Message.Chat.ID, m.Text)
+	} else if update.Message != nil && update.Message.Location != nil { // When user sends location
 		m, err = b.service.Handler.HandleLocation(update.Message)
 		if err != nil {
-			b.SendMessage(update.Message.Chat.ID, m.Text)
+			b.sendMessage(update.Message.Chat.ID, m.Text)
 		} else {
-			b.SendMessageWithInlineKeyboard(update.Message.Chat.ID, m)
+			b.sendMessageWithInlineKeyboard(update.Message.Chat.ID, m)
 		}
-	} else if update.CallbackQuery != nil { //When user choose forecast type or the "repeat last" command
+	} else if update.CallbackQuery != nil { // When user choose forecast type or the "repeat last" command
 		if update.CallbackQuery.Data != text.CallbackLast {
 			m, err = b.service.Handler.HandleCallbackQuery(update.CallbackQuery)
-			b.SendMessageWithInlineKeyboard(update.CallbackQuery.Message.Chat.ID, m)
+			if m.Buttons == nil {
+				b.sendMessage(update.CallbackQuery.Message.Chat.ID, text.TryAnother)
+			} else {
+				b.sendMessageWithInlineKeyboard(update.CallbackQuery.Message.Chat.ID, m)
+			}
 		} else {
 			m, err = b.service.Handler.HandleCallbackLast(update.CallbackQuery, update.SentFrom().FirstName)
-			b.SendMessageWithInlineKeyboard(update.CallbackQuery.Message.Chat.ID, m)
+			b.sendMessageWithInlineKeyboard(update.CallbackQuery.Message.Chat.ID, m)
 		}
-	} else if update.Message != nil && !update.Message.IsCommand() { //When user sends cityname
+	} else if update.Message != nil && !update.Message.IsCommand() { // When user sends cityname
 		m, err = b.service.Handler.HandleText(update.Message)
 		if m.Buttons != nil {
-			b.SendMessageWithInlineKeyboard(update.Message.Chat.ID, m)
+			b.sendMessageWithInlineKeyboard(update.Message.Chat.ID, m)
 		} else {
-			b.SendMessage(update.Message.Chat.ID, text.MsgSetUsersCityError)
+			b.sendMessage(update.Message.Chat.ID, text.MsgSetUsersCityError)
 		}
 	}
 }
 
-// SendMessageWithInlineKeyboard sends a message with text and inline keyboard for service type selection
-func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, userMsg model.UserMessage) {
+// sendMessageWithInlineKeyboard sends a message with text and inline keyboard for service type selection
+func (b *Bot) sendMessageWithInlineKeyboard(chatID int64, userMsg model.UserMessage) {
 
 	msg := tgbotapi.NewMessage(chatID, userMsg.Text)
 
@@ -90,7 +94,7 @@ func (b *Bot) SendMessageWithInlineKeyboard(chatID int64, userMsg model.UserMess
 	}
 }
 
-func (b *Bot) SendMessage(chatID int64, msgText string) {
+func (b *Bot) sendMessage(chatID int64, msgText string) {
 	msg := tgbotapi.NewMessage(chatID, msgText)
 	msg.ParseMode = "HTML"
 	_, err := b.botApi.Send(msg)

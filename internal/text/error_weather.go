@@ -1,7 +1,7 @@
 package text
 
 const (
-	MoreInfoURLFormat      = "\n\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
+	MoreInfoURLFormat      = "\n<a href=\"https://openweathermap.org/city/%s\">🌐 More</a>"
 	FailedToGetWeather     = "Failed to get weather data:"
 	TryAnother             = "Please try another city name, or try sending the location."
 	ErrWhileGettingWeather = "Error occurred while getting weather JSON data."

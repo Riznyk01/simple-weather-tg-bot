@@ -74,7 +74,7 @@ func (h *CommandsHandlerService) HandleText(message *tgbotapi.Message) (model.Us
 		if err != nil {
 			return model.UserMessage{Text: text.MsgSetUsersCityError, Buttons: []string{}}, nil
 		} else {
-			return model.UserMessage{Text: text.MsgChooseOption, Buttons: []string{text.CallbackCurrent, text.CallbackForecast}}, nil
+			return model.UserMessage{Text: text.MsgChooseOption, Buttons: []string{text.CallbackCurrent, text.CallbackForecast, text.CallbackToday}}, nil
 		}
 	} else {
 		return model.UserMessage{Text: text.MsgUnsupportedMessageType, Buttons: []string{}}, nil
@@ -98,7 +98,7 @@ func (h *CommandsHandlerService) HandleLocation(message *tgbotapi.Message) (mode
 	if err != nil {
 		return model.UserMessage{Text: text.MsgSetUsersLocationError, Buttons: []string{}}, err
 	} else {
-		return model.UserMessage{Text: fmt.Sprintf("Your location: %s, %v\n%s", uLat, uLon, text.MsgChooseOption), Buttons: []string{text.CallbackCurrentLocation, text.CallbackForecastLocation}}, err
+		return model.UserMessage{Text: fmt.Sprintf("Your location: %s, %v\n%s", uLat, uLon, text.MsgChooseOption), Buttons: []string{text.CallbackCurrentLocation, text.CallbackForecastLocation, text.CallbackTodayLocation}}, err
 	}
 }
 
@@ -112,9 +112,13 @@ func (h *CommandsHandlerService) HandleCallbackQuery(callback *tgbotapi.Callback
 	} else {
 		userMessage, err := h.client.GetWeatherForecast(user)
 		if err != nil {
-			return model.UserMessage{Text: userMessage, Buttons: []string{}}, err
+			return model.UserMessage{Text: userMessage, Buttons: nil}, err
 		} else {
-			return model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
+			if userMessage == text.TryAnother {
+				return model.UserMessage{Text: text.TryAnother, Buttons: nil}, err
+			} else {
+				return model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
+			}
 		}
 	}
 }
