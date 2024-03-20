@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/lib/pq"
 )
 
 type CommandsHandlerService struct {
@@ -41,15 +42,21 @@ func (h *CommandsHandlerService) HandleCommand(message *tgbotapi.Message, fname 
 func (h *CommandsHandlerService) HandleStartCommand(message *tgbotapi.Message, fname string) (model.UserMessage, error) {
 	err := h.repo.CreateUserById(message.Chat.ID)
 	if err != nil {
-		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: []string{}}, err
+		if pgErr, ok := err.(*pq.Error); ok {
+			// Checking if the error is a unique constraint violation
+			if pgErr.Code == "23505" {
+				return model.UserMessage{Text: fmt.Sprintf("%s\n%s", text.MsgAlreadyStarted, text.MsgHelp), Buttons: nil}, nil
+			}
+		}
+		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: nil}, err
 	} else {
-		return model.UserMessage{Text: fmt.Sprintf(text.MsgWelcome, fname) + text.MsgHelp, Buttons: []string{}}, nil
+		return model.UserMessage{Text: fmt.Sprintf(text.MsgWelcome, fname) + text.MsgHelp, Buttons: nil}, nil
 	}
 }
 
 // HandleHelpCommand handles the /help command.
 func (h *CommandsHandlerService) HandleHelpCommand() (model.UserMessage, error) {
-	return model.UserMessage{Text: text.MsgHelp, Buttons: []string{}}, nil
+	return model.UserMessage{Text: text.MsgHelp, Buttons: nil}, nil
 }
 
 // HandleUnitsCommand handles the /metric and /non-metric commands.
@@ -61,9 +68,9 @@ func (h *CommandsHandlerService) HandleUnitsCommand(message *tgbotapi.Message) (
 	}
 	err := h.repo.SetUserMeasurementSystem(message.Chat.ID, m)
 	if err != nil {
-		return model.UserMessage{Text: text.MsgSetUsersSystemError, Buttons: []string{}}, err
+		return model.UserMessage{Text: text.MsgSetUsersSystemError, Buttons: nil}, err
 	} else {
-		return model.UserMessage{Text: text.MsgMetricUnitChanged, Buttons: []string{}}, nil
+		return model.UserMessage{Text: text.MsgMetricUnitChanged, Buttons: nil}, nil
 	}
 }
 
@@ -72,12 +79,12 @@ func (h *CommandsHandlerService) HandleText(message *tgbotapi.Message) (model.Us
 	if !containsEmoji(message.Text) {
 		err := h.repo.SetUserLastInputCity(message.Chat.ID, message.Text)
 		if err != nil {
-			return model.UserMessage{Text: text.MsgSetUsersCityError, Buttons: []string{}}, nil
+			return model.UserMessage{Text: text.MsgSetUsersCityError, Buttons: nil}, nil
 		} else {
 			return model.UserMessage{Text: text.MsgChooseOption, Buttons: []string{text.CallbackCurrent, text.CallbackForecast, text.CallbackToday}}, nil
 		}
 	} else {
-		return model.UserMessage{Text: text.MsgUnsupportedMessageType, Buttons: []string{}}, nil
+		return model.UserMessage{Text: text.MsgUnsupportedMessageType, Buttons: nil}, nil
 	}
 }
 
@@ -96,7 +103,7 @@ func (h *CommandsHandlerService) HandleLocation(message *tgbotapi.Message) (mode
 	uLat, uLon := fmt.Sprintf("%f", message.Location.Latitude), fmt.Sprintf("%f", message.Location.Longitude)
 	err := h.repo.SetUserLastInputLocation(message.Chat.ID, uLat, uLon)
 	if err != nil {
-		return model.UserMessage{Text: text.MsgSetUsersLocationError, Buttons: []string{}}, err
+		return model.UserMessage{Text: text.MsgSetUsersLocationError, Buttons: nil}, err
 	} else {
 		return model.UserMessage{Text: fmt.Sprintf("Your location: %s, %v\n%s", uLat, uLon, text.MsgChooseOption), Buttons: []string{text.CallbackCurrentLocation, text.CallbackForecastLocation, text.CallbackTodayLocation}}, err
 	}
@@ -108,7 +115,7 @@ func (h *CommandsHandlerService) HandleCallbackQuery(callback *tgbotapi.Callback
 	_ = h.repo.SetUserLastWeatherCommand(callback.Message.Chat.ID, callback.Data)
 	user, err := h.repo.GetUserById(callback.Message.Chat.ID)
 	if err != nil {
-		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: []string{}}, err
+		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: nil}, err
 	} else {
 		userMessage, err := h.client.GetWeatherForecast(user)
 		if err != nil {
@@ -128,14 +135,14 @@ func (h *CommandsHandlerService) HandleCallbackLast(callback *tgbotapi.CallbackQ
 
 	user, err := h.repo.GetUserById(callback.Message.Chat.ID)
 	if err != nil {
-		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: []string{}}, err
+		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: nil}, err
 	} else {
 		if user.Last == "" {
-			return model.UserMessage{Text: fmt.Sprintf(text.MsgLastDataUnavailable, fname), Buttons: []string{}}, err
+			return model.UserMessage{Text: fmt.Sprintf(text.MsgLastDataUnavailable, fname), Buttons: nil}, err
 		} else {
 			userMessage, err := h.client.GetWeatherForecast(user)
 			if err != nil {
-				return model.UserMessage{Text: userMessage, Buttons: []string{}}, err
+				return model.UserMessage{Text: userMessage, Buttons: nil}, err
 			} else {
 				return model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
 			}
