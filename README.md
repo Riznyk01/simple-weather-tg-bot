@@ -15,16 +15,22 @@ Weather Telegram Bot is a Telegram bot written in Golang that provides weather i
 
 ## Screenshots
 
-Here are some screenshots of the bot in action:
+Here are some screenshots of the bot in action:  
 
-*City name current weather search:*  
-![Screenshot 1](images/screenshot_current.png)
+*Bot`s commands:*  
+![Screenshot 1](images/screen_1.png)
 
-*City name 5-days forecast search:*  
-![Screenshot 2](images/screenshot_5day_forecast.png)
+*The current weather search by the city name:*  
+![Screenshot 2](images/screen_2.png)
+
+*5-days forecast search:*  
+![Screenshot 3](images/screen_3.png)
+
+*Today forecast search (before 12:00 am):*  
+![Screenshot 4](images/screen_4.png)
 
 *Weather retrieval based on location:*  
-![Screenshot 3](images/screenshot_location.png)
+![Screenshot 5](images/screenshot_location.png)
 
 ## Environment Variables
 
