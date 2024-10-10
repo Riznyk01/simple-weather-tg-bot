@@ -17,6 +17,7 @@ type UserRepository interface {
 	AddUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
 	DeleteUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
 	IncrementUserUsageCount(id int64) error
+	GetSchedulesByCurrentTime() ([]model.ScheduleData, error)
 }
 
 type Repository struct {

@@ -7,6 +7,7 @@ import (
 	"SimpleWeatherTgBot/internal/text"
 	"github.com/go-logr/logr"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"time"
 )
 
 type Bot struct {
@@ -32,8 +33,28 @@ func (b *Bot) Run() {
 
 	updates := b.botApi.GetUpdatesChan(u)
 
+	go b.startScheduleChecker()
+
 	for update := range updates {
 		go b.processIncomingUpdates(update)
+	}
+}
+
+func (b *Bot) startScheduleChecker() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			uId, m, err := b.service.HandleSchedule()
+			if err != nil {
+				b.log.Error(err, "error occurred while handling schedules")
+			}
+			if len(m.Text) > 0 {
+				b.sendMessage(uId, m.Text)
+			}
+		}
 	}
 }
 

@@ -162,3 +162,34 @@ func (r *UserRepositoryPostgres) IncrementUserUsageCount(id int64) error {
 	}
 	return nil
 }
+
+func (r *UserRepositoryPostgres) GetSchedulesByCurrentTime() ([]model.ScheduleData, error) {
+	now := time.Now().UTC()
+
+	q := fmt.Sprintf("SELECT id, city, schedule_time, weather_type, timezone_offset FROM %s WHERE EXTRACT(HOUR FROM schedule_time) = $1 AND EXTRACT(MINUTE FROM schedule_time) = $2", schedulesTable)
+	rows, err := r.db.Query(q, now.Hour(), now.Minute())
+	if err != nil {
+		r.log.Error(err, "Error fetching schedules by current time")
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var schedules []model.ScheduleData
+	for rows.Next() {
+		var schedule model.ScheduleData
+		err := rows.Scan(&schedule.ID, &schedule.City, &schedule.ScheduleTime, &schedule.WeatherType, &schedule.TimezoneOffset)
+		if err != nil {
+			r.log.Error(err, "Error scanning schedule data")
+			return nil, err
+		}
+		schedules = append(schedules, schedule)
+	}
+
+	if err := rows.Err(); err != nil {
+		r.log.Error(err, "Error iterating over rows")
+		return nil, err
+	}
+
+	return schedules, nil
+}

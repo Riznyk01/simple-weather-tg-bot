@@ -234,3 +234,31 @@ func (h *CommandsHandlerService) HandleCallbackLast(callback *tgbotapi.CallbackQ
 		}
 	}
 }
+
+// HandleSchedule ...
+func (h *CommandsHandlerService) HandleSchedule() (int64, model.UserMessage, error) {
+
+	schedules, err := h.repo.GetSchedulesByCurrentTime()
+	if err != nil {
+		h.log.Error(err, "Error fetching schedules")
+		return 0, model.UserMessage{}, err
+	}
+	//TODO: add metric fetching
+	if len(schedules) > 0 {
+		for _, schedule := range schedules {
+			time.Sleep(1 * time.Second)
+			userMessage, err := h.client.GetWeatherForecast(model.UserData{
+				schedule.City,
+				"",
+				"",
+				true,
+				schedule.WeatherType})
+			if err != nil {
+				return 0, model.UserMessage{Text: userMessage, Buttons: nil}, err
+			} else {
+				return schedule.ID, model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
+			}
+		}
+	}
+	return 0, model.UserMessage{Text: "", Buttons: nil}, nil
+}
