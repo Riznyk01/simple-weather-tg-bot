@@ -9,6 +9,9 @@ import (
 	"github.com/go-logr/logr"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/lib/pq"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type CommandsHandlerService struct {
@@ -33,6 +36,10 @@ func (h *CommandsHandlerService) HandleCommand(message *tgbotapi.Message, fname 
 		return h.HandleStartCommand(message, fname)
 	} else if message.Text == text.CommandHelp {
 		return h.HandleHelpCommand()
+	} else if strings.HasPrefix(message.Text, "/add") {
+		return h.HandleAddSchedule(message)
+	} else if strings.HasPrefix(message.Text, "/del") {
+		return h.HandleDeleteSchedule(message)
 	}
 	//change
 	return model.UserMessage{}, nil
@@ -56,6 +63,82 @@ func (h *CommandsHandlerService) HandleStartCommand(message *tgbotapi.Message, f
 
 // HandleHelpCommand handles the /help command.
 func (h *CommandsHandlerService) HandleHelpCommand() (model.UserMessage, error) {
+	return model.UserMessage{Text: text.MsgHelp, Buttons: nil}, nil
+}
+
+// HandleAddSchedule ...
+func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
+	parts := strings.Split(message.Text, "_")
+	if len(parts) != 5 {
+		return model.UserMessage{Text: "please check if you typed the correct command, like /add_18:00_2_cityname_weathertype", Buttons: nil}, nil
+	}
+
+	timeStr := parts[1]
+	offsetStr := parts[2]
+	scheduleCity := parts[3]
+	weatherType := parts[4]
+
+	t, _ := time.Parse("15:04", timeStr)
+
+	offset, err := strconv.ParseFloat(offsetStr, 64)
+	if err != nil {
+		return model.UserMessage{Text: "invalid timezone offset", Buttons: nil}, nil
+	}
+
+	// Convert local time to UTC
+	offsetHours := int(offset)
+	offsetMinutes := int((offset - float64(offsetHours)) * 60)
+	loc := time.FixedZone("UserTZ", offsetHours*3600+offsetMinutes*60)
+
+	// Create local time considering the offset
+	localTime := time.Date(0, 1, 1, t.Hour(), t.Minute(), 0, 0, loc)
+	utcTime := localTime.UTC()
+
+	err = h.repo.AddUsersSchedule(message.Chat.ID, scheduleCity, utcTime, weatherType, offset)
+	if err != nil {
+		return model.UserMessage{Text: err.Error(), Buttons: nil}, err
+	}
+	return model.UserMessage{Text: "the schedule was added to the list", Buttons: nil}, nil
+}
+
+// HandleDeleteSchedule ...
+func (h *CommandsHandlerService) HandleDeleteSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
+	parts := strings.Split(message.Text, "_")
+	if len(parts) != 5 {
+		return model.UserMessage{Text: "please check if you typed the correct command, like /del_18:00_2_cityname_weathertype", Buttons: nil}, nil
+	}
+
+	timeStr := parts[1]
+	offsetStr := parts[2]
+	scheduleCity := parts[3]
+	weatherType := parts[4]
+
+	t, err := time.Parse("15:04", timeStr)
+	if err != nil {
+		return model.UserMessage{Text: "invalid time format, should be HH:MM", Buttons: nil}, nil
+	}
+
+	offset, err := strconv.ParseFloat(offsetStr, 64)
+	if err != nil {
+		return model.UserMessage{Text: "invalid timezone offset", Buttons: nil}, nil
+	}
+
+	offsetHours := int(offset)
+	offsetMinutes := int((offset - float64(offsetHours)) * 60)
+	loc := time.FixedZone("UserTZ", offsetHours*3600+offsetMinutes*60)
+
+	localTime := time.Date(0, 1, 1, t.Hour(), t.Minute(), 0, 0, loc)
+	utcTime := localTime.UTC()
+
+	err = h.repo.DeleteUsersSchedule(message.Chat.ID, scheduleCity, utcTime, weatherType, offset)
+	if err != nil {
+		return model.UserMessage{Text: err.Error(), Buttons: nil}, err
+	}
+	return model.UserMessage{Text: "the schedule was deleted from the list", Buttons: nil}, nil
+}
+
+// HandleRemoveSchedule ...
+func (h *CommandsHandlerService) HandleRemoveSchedule() (model.UserMessage, error) {
 	return model.UserMessage{Text: text.MsgHelp, Buttons: nil}, nil
 }
 
@@ -137,7 +220,7 @@ func (h *CommandsHandlerService) HandleCallbackLast(callback *tgbotapi.CallbackQ
 	if err != nil {
 		return model.UserMessage{Text: text.ErrWhileExecuting, Buttons: nil}, err
 	} else {
-		if user.Last == "" {
+		if user.LastWeatherType == "" {
 			return model.UserMessage{Text: fmt.Sprintf(text.MsgLastDataUnavailable, fname), Buttons: nil}, err
 		} else {
 			userMessage, err := h.client.GetWeatherForecast(user)

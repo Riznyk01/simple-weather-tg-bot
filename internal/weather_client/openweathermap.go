@@ -67,18 +67,18 @@ func (OW *OWMService) GetWeatherForecast(us model.UserData) (weatherMessage stri
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	if us.Last == text.CallbackCurrent || us.Last == text.CallbackCurrentLocation {
+	if us.LastWeatherType == text.CallbackCurrent || us.LastWeatherType == text.CallbackCurrentLocation {
 		if err = decoder.Decode(&weatherData); err != nil {
 			OW.log.Error(err, text.ErrDecodingJSON)
 			return "", err
 		}
 		weatherMessage, cityId = messageCurrentWeather(weatherData, us.Metric)
-	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation || us.Last == text.CallbackTodayLocation || us.Last == text.CallbackToday {
+	} else if us.LastWeatherType == text.CallbackForecast || us.LastWeatherType == text.CallbackForecastLocation || us.LastWeatherType == text.CallbackTodayLocation || us.LastWeatherType == text.CallbackToday {
 		if err = decoder.Decode(&forecastData); err != nil {
 			OW.log.Error(err, text.ErrDecodingJSON)
 			return "", err
 		}
-		weatherMessage, cityId = messageForecastWeather(forecastData, us.Last, us.Metric)
+		weatherMessage, cityId = messageForecastWeather(forecastData, us.LastWeatherType, us.Metric)
 	}
 	return weatherMessage + fmt.Sprintf(text.MoreInfoURLFormat, cityId), nil
 }
@@ -89,9 +89,9 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 	OW.log.V(1).Info("command received: ", "command", us)
 
 	weatherUrl := OW.cfg.WeatherApiUrl
-	if us.Last == text.CallbackCurrent || us.Last == text.CallbackCurrentLocation {
+	if us.LastWeatherType == text.CallbackCurrent || us.LastWeatherType == text.CallbackCurrentLocation {
 		weatherUrl += "weather?"
-	} else if us.Last == text.CallbackForecast || us.Last == text.CallbackForecastLocation || us.Last == text.CallbackTodayLocation || us.Last == text.CallbackToday {
+	} else if us.LastWeatherType == text.CallbackForecast || us.LastWeatherType == text.CallbackForecastLocation || us.LastWeatherType == text.CallbackTodayLocation || us.LastWeatherType == text.CallbackToday {
 		weatherUrl += "forecast?"
 	}
 
@@ -103,9 +103,9 @@ func (OW *OWMService) generateWeatherUrl(us model.UserData) (fullWeatherUrl stri
 
 	q := url.Values{}
 
-	if us.Last == text.CallbackCurrent || us.Last == text.CallbackForecast || us.Last == text.CallbackToday {
+	if us.LastWeatherType == text.CallbackCurrent || us.LastWeatherType == text.CallbackForecast || us.LastWeatherType == text.CallbackToday {
 		q.Add("q", us.City)
-	} else if us.Last == text.CallbackForecastLocation || us.Last == text.CallbackCurrentLocation || us.Last == text.CallbackTodayLocation {
+	} else if us.LastWeatherType == text.CallbackForecastLocation || us.LastWeatherType == text.CallbackCurrentLocation || us.LastWeatherType == text.CallbackTodayLocation {
 		q.Add("lat", us.Lat)
 		q.Add("lon", us.Lon)
 	}

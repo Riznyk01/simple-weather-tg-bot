@@ -4,6 +4,7 @@ import (
 	"SimpleWeatherTgBot/internal/model"
 	"github.com/go-logr/logr"
 	"github.com/jmoiron/sqlx"
+	"time"
 )
 
 type UserRepository interface {
@@ -13,6 +14,8 @@ type UserRepository interface {
 	SetUserLastWeatherCommand(id int64, last string) error
 	GetUserById(id int64) (model.UserData, error)
 	CreateUserById(userId int64) error
+	AddUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
+	DeleteUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
 }
 
 type Repository struct {

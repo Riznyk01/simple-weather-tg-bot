@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	usersTable = "user_data"
+	usersTable     = "user_data"
+	schedulesTable = "schedule_data"
 )
 
 func NewPostgresDB(pgCfg *config.PostgresConfig) (*sqlx.DB, error) {
