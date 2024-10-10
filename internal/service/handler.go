@@ -207,6 +207,7 @@ func (h *CommandsHandlerService) HandleCallbackQuery(callback *tgbotapi.Callback
 			if userMessage == text.TryAnother {
 				return model.UserMessage{Text: text.TryAnother, Buttons: nil}, err
 			} else {
+				h.repo.IncrementUserUsageCount(callback.Message.Chat.ID)
 				return model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
 			}
 		}
@@ -227,6 +228,7 @@ func (h *CommandsHandlerService) HandleCallbackLast(callback *tgbotapi.CallbackQ
 			if err != nil {
 				return model.UserMessage{Text: userMessage, Buttons: nil}, err
 			} else {
+				h.repo.IncrementUserUsageCount(callback.Message.Chat.ID)
 				return model.UserMessage{Text: userMessage, Buttons: []string{text.CallbackLast}}, err
 			}
 		}

@@ -151,3 +151,14 @@ func (r *UserRepositoryPostgres) CreateUserById(userId int64) error {
 	}
 	return nil
 }
+
+func (r *UserRepositoryPostgres) IncrementUserUsageCount(id int64) error {
+
+	q := fmt.Sprintf("UPDATE %s SET usage_count = usage_count + 1 WHERE id = $1", usersTable)
+	_, err := r.db.Exec(q, id)
+	if err != nil {
+		r.log.Error(err, "Error incrementing usage count", "user_id", id)
+		return err
+	}
+	return nil
+}

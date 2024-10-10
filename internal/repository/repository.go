@@ -16,6 +16,7 @@ type UserRepository interface {
 	CreateUserById(userId int64) error
 	AddUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
 	DeleteUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error
+	IncrementUserUsageCount(id int64) error
 }
 
 type Repository struct {
