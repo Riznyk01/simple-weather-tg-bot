@@ -2,7 +2,7 @@ package text
 
 const (
 	MsgWelcome             = "🎈Hello, %s. This bot will send you weather information from openweathermap.org. \n\n"
-	MsgHelp                = "Enter the city name in your language, then choose the weather type, or send your location, and then also choose the weather type."
+	MsgHelp                = "Enter the city name in your language, then choose the weather type, or send your location, and then also choose the weather type. \n\nBot Commands for Adding Schedules:\n🪄The command \"/add_18:00_2_cityname_weathertype_metricunits\" adds a schedule that will be executed at 18:00, when:\n\n🔸 2 — the user's timezone\n🔸 weathertype — the forecast type (\"current\", \"5-days forecast\", \"today forecast\"),\n🔸 metricunits — true/false\n\n🪄The command \"/delete-schedule_city_name\" deletes the schedules for the specified city_name and users who typed this command."
 	MsgChooseOption        = "Choose an action:"
 	MsgMetricUnitChanged   = "The unit system has been updated."
 	MsgLastDataUnavailable = "Sorry ❤️, %s, there is no saved weather forecast parameters from your last request. <b>" +
