@@ -115,7 +115,8 @@ The command **/add_18:00_2_cityname_weathertype_metricunits** adds a schedule th
 **weathertype** — the forecast type ("current", "5-days forecast", "today forecast")  
 **metricunits** — true/false
 
-The command **/delete-schedule_city_name** deletes the schedules for the specified city_name and users who typed this command.
+The command **/deleteschedules** deletes all user schedules.
+The command **/viewschedules** fetches all user schedules.
 
 ## Pricing Information
 Information about pricing, available plans, and limitations of the free API package can be found [here](https://openweathermap.org/price).
