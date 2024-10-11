@@ -10,6 +10,7 @@ Weather Telegram Bot is a Telegram bot written in Golang that provides weather i
 - [Run](#run)
 - [Database Migrations](#database-migrations)
 - [Bot Commands](#bot-commands)
+- [Bot Commands for Adding Schedules](#bot-commands)
 - [Pricing Information](#pricing-information)
 - [Note](#note)
 
@@ -102,10 +103,19 @@ make migrate
 ```
 
 ## Bot Commands
-/start: sends a welcome message and instructions to the user.  
-/help: provides information on how to use the bot.  
-/metric: set metric units  
-/nonmetric: set non-metric units
+**/start**: sends a welcome message and instructions to the user.  
+**/help**: provides information on how to use the bot.  
+**/metric**: set metric units  
+**/nonmetric**: set non-metric units
+
+## Bot Commands for Adding Schedules
+
+The command **/add_18:00_2_cityname_weathertype_metricunits** adds a schedule that will be executed at 18:00.
+**2** the user's timezone  
+**weathertype** — the forecast type ("current", "5-days forecast", "today forecast")  
+**metricunits** — true/false
+
+The command **/delete-schedule_city_name** deletes the schedules for the specified city_name and users who typed this command.
 
 ## Pricing Information
 Information about pricing, available plans, and limitations of the free API package can be found [here](https://openweathermap.org/price).

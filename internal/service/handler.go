@@ -110,7 +110,8 @@ func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (m
 func (h *CommandsHandlerService) HandleDeleteSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
 	parts := strings.Split(message.Text, "_")
 	if len(parts) != 2 {
-		return model.UserMessage{Text: "please check if you typed the correct command, like /delete_cityname", Buttons: nil}, nil
+		return model.UserMessage{Text: fmt.Sprintf("please check if you typed the correct command, like %s", text.CommandDeleteSchedule),
+			Buttons: nil}, nil
 	}
 
 	scheduleCity := parts[1]
