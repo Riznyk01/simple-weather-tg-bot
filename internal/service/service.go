@@ -18,6 +18,7 @@ type Handler interface {
 	HandleCallbackQuery(callback *tgbotapi.CallbackQuery) (model.UserMessage, error)
 	HandleCallbackLast(callback *tgbotapi.CallbackQuery, fname string) (model.UserMessage, error)
 	HandleSchedule() (int64, model.UserMessage, error)
+	HandleViewSchedules(message *tgbotapi.Message) (model.UserMessage, error)
 }
 
 type Service struct {

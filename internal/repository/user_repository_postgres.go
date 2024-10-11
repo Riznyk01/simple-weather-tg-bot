@@ -56,9 +56,9 @@ func (r *UserRepositoryPostgres) AddUsersSchedule(id int64, scheduleCity string,
 }
 
 // DeleteUsersSchedule ...
-func (r *UserRepositoryPostgres) DeleteUsersSchedule(id int64, scheduleCity string) error {
-	q := fmt.Sprintf("DELETE FROM %s WHERE id = $1 AND city = $2", schedulesTable)
-	_, err := r.db.Exec(q, id, scheduleCity)
+func (r *UserRepositoryPostgres) DeleteUsersSchedule(id int64) error {
+	q := fmt.Sprintf("DELETE FROM %s WHERE id = $1", schedulesTable)
+	_, err := r.db.Exec(q, id)
 	if err != nil {
 		r.log.Error(err, "Error deleting user's schedule")
 		return err
@@ -179,6 +179,36 @@ func (r *UserRepositoryPostgres) GetSchedulesByCurrentTime() ([]model.ScheduleDa
 	for rows.Next() {
 		var schedule model.ScheduleData
 		err := rows.Scan(&schedule.ID, &schedule.City, &schedule.ScheduleTime, &schedule.WeatherType, &schedule.TimezoneOffset)
+		if err != nil {
+			r.log.Error(err, "Error scanning schedule data")
+			return nil, err
+		}
+		schedules = append(schedules, schedule)
+	}
+
+	if err := rows.Err(); err != nil {
+		r.log.Error(err, "Error iterating over rows")
+		return nil, err
+	}
+
+	return schedules, nil
+}
+
+func (r *UserRepositoryPostgres) GetSchedules(userId int64) ([]model.ScheduleData, error) {
+	var schedules []model.ScheduleData
+
+	q := fmt.Sprintf("SELECT id, city, schedule_time, weather_type, timezone_offset, units FROM %s WHERE id = $1", schedulesTable)
+	rows, err := r.db.Query(q, userId)
+	if err != nil {
+		r.log.Error(err, "Error fetching schedules by user id")
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var schedule model.ScheduleData
+		err := rows.Scan(&schedule.ID, &schedule.City, &schedule.ScheduleTime, &schedule.WeatherType, &schedule.TimezoneOffset, &schedule.Units)
 		if err != nil {
 			r.log.Error(err, "Error scanning schedule data")
 			return nil, err

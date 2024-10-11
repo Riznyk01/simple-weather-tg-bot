@@ -40,9 +40,12 @@ func (h *CommandsHandlerService) HandleCommand(message *tgbotapi.Message, fname 
 		return h.HandleAddSchedule(message)
 	} else if strings.HasPrefix(message.Text, text.CommandDeleteSchedule) {
 		return h.HandleDeleteSchedule(message)
+	} else if message.Text == text.CommandViewSchedulesList {
+		return h.HandleViewSchedules(message)
 	}
-	//change
-	return model.UserMessage{}, nil
+	return model.UserMessage{
+		Text:    "please, check your command",
+		Buttons: nil}, nil
 }
 
 // HandleStartCommand handles the /start command.
@@ -108,15 +111,8 @@ func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (m
 
 // HandleDeleteSchedule ...
 func (h *CommandsHandlerService) HandleDeleteSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
-	parts := strings.Split(message.Text, "_")
-	if len(parts) != 2 {
-		return model.UserMessage{Text: fmt.Sprintf("please check if you typed the correct command, like %s", text.CommandDeleteSchedule),
-			Buttons: nil}, nil
-	}
 
-	scheduleCity := parts[1]
-
-	err := h.repo.DeleteUsersSchedule(message.Chat.ID, scheduleCity)
+	err := h.repo.DeleteUsersSchedule(message.Chat.ID)
 	if err != nil {
 		return model.UserMessage{Text: err.Error(), Buttons: nil}, err
 	}
@@ -221,7 +217,7 @@ func (h *CommandsHandlerService) HandleCallbackLast(callback *tgbotapi.CallbackQ
 	}
 }
 
-// HandleSchedule ...
+// HandleSchedule processes the schedule if the server time equals the scheduled time in UTC.
 func (h *CommandsHandlerService) HandleSchedule() (int64, model.UserMessage, error) {
 
 	schedules, err := h.repo.GetSchedulesByCurrentTime()
@@ -229,7 +225,6 @@ func (h *CommandsHandlerService) HandleSchedule() (int64, model.UserMessage, err
 		h.log.Error(err, "Error fetching schedules")
 		return 0, model.UserMessage{}, err
 	}
-	//TODO: add metric fetching
 	if len(schedules) > 0 {
 		for _, schedule := range schedules {
 			time.Sleep(1 * time.Second)
@@ -247,4 +242,23 @@ func (h *CommandsHandlerService) HandleSchedule() (int64, model.UserMessage, err
 		}
 	}
 	return 0, model.UserMessage{Text: "", Buttons: nil}, nil
+}
+
+// HandleViewSchedules fetches the user's schedules if the user uses the '/view-schedules' command.
+func (h *CommandsHandlerService) HandleViewSchedules(message *tgbotapi.Message) (model.UserMessage, error) {
+	var msg string
+
+	schedules, err := h.repo.GetSchedules(message.Chat.ID)
+	if err != nil {
+		h.log.Error(err, "Error fetching schedules")
+		return model.UserMessage{}, err
+	}
+
+	if len(schedules) > 0 {
+		for _, schedule := range schedules {
+			msg += fmt.Sprintf("ID: %d, City: %s, Schedule Time: %s, Weather Type: %s, Timezone Offset: %f, Units: %t\n",
+				schedule.ID, schedule.City, schedule.ScheduleTime, schedule.WeatherType, schedule.TimezoneOffset, schedule.Units)
+		}
+	}
+	return model.UserMessage{Text: msg, Buttons: nil}, nil
 }
