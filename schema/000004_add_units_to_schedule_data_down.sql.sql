@@ -1,0 +1,2 @@
+ALTER TABLE schedule_data
+DROP COLUMN IF EXISTS units;

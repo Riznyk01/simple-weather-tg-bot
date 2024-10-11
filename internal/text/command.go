@@ -5,4 +5,5 @@ const (
 	CommandHelp           = "/help"
 	CommandMetricUnits    = "/metric"
 	CommandNonMetricUnits = "/nonmetric"
+	CommandDeleteSchedule = "/delete-schedule"
 )

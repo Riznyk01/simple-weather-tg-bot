@@ -44,9 +44,9 @@ func (r *UserRepositoryPostgres) SetUserMeasurementSystem(id int64, system bool)
 }
 
 // AddUsersSchedule ...
-func (r *UserRepositoryPostgres) AddUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error {
-	q := fmt.Sprintf("INSERT INTO %s (id, city, schedule_time, weather_type, timezone_offset) VALUES ($1, $2, $3, $4, $5)", schedulesTable)
-	_, err := r.db.Exec(q, id, scheduleCity, scheduleTime, weatherType, timezoneOffset)
+func (r *UserRepositoryPostgres) AddUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64, metricUnits bool) error {
+	q := fmt.Sprintf("INSERT INTO %s (id, city, schedule_time, weather_type, timezone_offset, units) VALUES ($1, $2, $3, $4, $5, $6)", schedulesTable)
+	_, err := r.db.Exec(q, id, scheduleCity, scheduleTime, weatherType, timezoneOffset, metricUnits)
 	if err != nil {
 		r.log.Error(err, "Error adding user's schedule")
 		return err
@@ -56,9 +56,9 @@ func (r *UserRepositoryPostgres) AddUsersSchedule(id int64, scheduleCity string,
 }
 
 // DeleteUsersSchedule ...
-func (r *UserRepositoryPostgres) DeleteUsersSchedule(id int64, scheduleCity string, scheduleTime time.Time, weatherType string, timezoneOffset float64) error {
-	q := fmt.Sprintf("DELETE FROM %s WHERE id = $1 AND city = $2 AND schedule_time = $3 AND weather_type = $4 AND timezone_offset = $5", schedulesTable)
-	_, err := r.db.Exec(q, id, scheduleCity, scheduleTime, weatherType, timezoneOffset)
+func (r *UserRepositoryPostgres) DeleteUsersSchedule(id int64, scheduleCity string) error {
+	q := fmt.Sprintf("DELETE FROM %s WHERE id = $1 AND city = $2", schedulesTable)
+	_, err := r.db.Exec(q, id, scheduleCity)
 	if err != nil {
 		r.log.Error(err, "Error deleting user's schedule")
 		return err

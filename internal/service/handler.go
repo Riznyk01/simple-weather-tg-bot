@@ -38,7 +38,7 @@ func (h *CommandsHandlerService) HandleCommand(message *tgbotapi.Message, fname 
 		return h.HandleHelpCommand()
 	} else if strings.HasPrefix(message.Text, "/add") {
 		return h.HandleAddSchedule(message)
-	} else if strings.HasPrefix(message.Text, "/del") {
+	} else if strings.HasPrefix(message.Text, text.CommandDeleteSchedule) {
 		return h.HandleDeleteSchedule(message)
 	}
 	//change
@@ -69,14 +69,19 @@ func (h *CommandsHandlerService) HandleHelpCommand() (model.UserMessage, error) 
 // HandleAddSchedule ...
 func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
 	parts := strings.Split(message.Text, "_")
-	if len(parts) != 5 {
-		return model.UserMessage{Text: "please check if you typed the correct command, like /add_18:00_2_cityname_weathertype", Buttons: nil}, nil
+	if len(parts) != 6 {
+		return model.UserMessage{Text: "please check if you typed the correct command, like /add_18:00_2_cityname_weathertype_metricunits", Buttons: nil}, nil
 	}
 
 	timeStr := parts[1]
 	offsetStr := parts[2]
 	scheduleCity := parts[3]
 	weatherType := parts[4]
+
+	var metricUnits bool
+	if parts[5] == "true" {
+		metricUnits = true
+	}
 
 	t, _ := time.Parse("15:04", timeStr)
 
@@ -94,7 +99,7 @@ func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (m
 	localTime := time.Date(0, 1, 1, t.Hour(), t.Minute(), 0, 0, loc)
 	utcTime := localTime.UTC()
 
-	err = h.repo.AddUsersSchedule(message.Chat.ID, scheduleCity, utcTime, weatherType, offset)
+	err = h.repo.AddUsersSchedule(message.Chat.ID, scheduleCity, utcTime, weatherType, offset, metricUnits)
 	if err != nil {
 		return model.UserMessage{Text: err.Error(), Buttons: nil}, err
 	}
@@ -104,33 +109,13 @@ func (h *CommandsHandlerService) HandleAddSchedule(message *tgbotapi.Message) (m
 // HandleDeleteSchedule ...
 func (h *CommandsHandlerService) HandleDeleteSchedule(message *tgbotapi.Message) (model.UserMessage, error) {
 	parts := strings.Split(message.Text, "_")
-	if len(parts) != 5 {
-		return model.UserMessage{Text: "please check if you typed the correct command, like /del_18:00_2_cityname_weathertype", Buttons: nil}, nil
+	if len(parts) != 2 {
+		return model.UserMessage{Text: "please check if you typed the correct command, like /delete_cityname", Buttons: nil}, nil
 	}
 
-	timeStr := parts[1]
-	offsetStr := parts[2]
-	scheduleCity := parts[3]
-	weatherType := parts[4]
+	scheduleCity := parts[1]
 
-	t, err := time.Parse("15:04", timeStr)
-	if err != nil {
-		return model.UserMessage{Text: "invalid time format, should be HH:MM", Buttons: nil}, nil
-	}
-
-	offset, err := strconv.ParseFloat(offsetStr, 64)
-	if err != nil {
-		return model.UserMessage{Text: "invalid timezone offset", Buttons: nil}, nil
-	}
-
-	offsetHours := int(offset)
-	offsetMinutes := int((offset - float64(offsetHours)) * 60)
-	loc := time.FixedZone("UserTZ", offsetHours*3600+offsetMinutes*60)
-
-	localTime := time.Date(0, 1, 1, t.Hour(), t.Minute(), 0, 0, loc)
-	utcTime := localTime.UTC()
-
-	err = h.repo.DeleteUsersSchedule(message.Chat.ID, scheduleCity, utcTime, weatherType, offset)
+	err := h.repo.DeleteUsersSchedule(message.Chat.ID, scheduleCity)
 	if err != nil {
 		return model.UserMessage{Text: err.Error(), Buttons: nil}, err
 	}
